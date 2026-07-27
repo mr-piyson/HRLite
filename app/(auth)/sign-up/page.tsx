@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { signUp } from "@/lib/auth-client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -13,6 +13,12 @@ export default function SignUpPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      router.replace("/sign-in")
+    }
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,7 +43,7 @@ export default function SignUpPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle>Create Account</CardTitle>
+        <CardTitle>Create User (Dev)</CardTitle>
         <CardDescription>Attendance Kiosk — Enterprise HRMS</CardDescription>
       </CardHeader>
       <CardContent>
