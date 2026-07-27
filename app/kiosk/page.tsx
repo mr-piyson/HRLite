@@ -5,6 +5,8 @@ import { trpc } from "@/lib/trpc/client";
 import { ArrowUp, Maximize2, Sparkles, Clock, CheckCircle2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 type KioskState = "idle" | "lookup" | "confirming" | "processing" | "success";
 
@@ -16,6 +18,9 @@ interface EmployeeInfo {
 }
 
 export default function KioskPage() {
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
+
   const [state, setState] = useState<KioskState>("idle");
   const [code, setCode] = useState("");
   const [employee, setEmployee] = useState<EmployeeInfo | null>(null);
@@ -122,6 +127,12 @@ export default function KioskPage() {
     d.toLocaleTimeString("en-US", {
       second: "2-digit",
     });
+
+  if (isPending) return null;
+  if (!session) {
+    router.push("/sign-in");
+    return null;
+  }
 
   return (
     <div className="flex h-screen w-full flex-col justify-between bg-[#131314] text-[#e3e3e3] font-sans overflow-hidden antialiased select-none">

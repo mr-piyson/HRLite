@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { trpc } from "@/lib/trpc/client"
 import { ArrowUp, Maximize2, Sparkles, Clock, CheckCircle2, User, Monitor } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import Link from "next/link"
+import { useSession } from "@/lib/auth-client"
 
 type KioskState = "idle" | "lookup" | "confirming" | "processing" | "success";
 
@@ -19,6 +20,8 @@ interface EmployeeInfo {
 
 export default function KioskPage() {
   const { slug } = useParams<{ slug: string }>()
+  const { data: session, isPending } = useSession()
+  const router = useRouter()
   const [state, setState] = useState<KioskState>("idle");
   const [code, setCode] = useState("");
   const [employee, setEmployee] = useState<EmployeeInfo | null>(null);
@@ -116,7 +119,7 @@ export default function KioskPage() {
       second: "2-digit",
     });
 
-  if (configLoading) {
+  if (isPending || configLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#131314] text-[#e3e3e3]">
         <div className="animate-pulse space-y-4 text-center">
@@ -125,6 +128,11 @@ export default function KioskPage() {
         </div>
       </div>
     )
+  }
+
+  if (!session) {
+    router.push("/sign-in")
+    return null
   }
 
   if (!config) {
