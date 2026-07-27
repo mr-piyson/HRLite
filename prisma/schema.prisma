@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Supplier {
+  id            String   @id @default(cuid())
+  supplierCode  String   @unique
+  supplierName  String
+  contactPerson String?
+  contactNum1   String?
+  contactNum2   String?
+  email         String?
+  address       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employees  Employee[]
+  attendance Attendance[]
+}
+
+model Employee {
+  id             String   @id @default(cuid())
+  empCode        String   @unique
+  fullName       String
+  designation    String?
+  department     String?
+  hourRate       Float    @default(0)
+  currency       String?  @default("SAR")
+  nationality    String?
+  documentType   String?
+  documentNumber String?
+  supplierId     String?
+  photo          String?
+  pin            String?
+  rfid           String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  attendanceLogs AttendanceLog[]
+  attendance     Attendance[]
+
+  @@index([supplierId])
+  @@index([rfid])
+}
+
+model AttendanceLog {
+  id         String   @id @default(cuid())
+  employeeId String
+  logTime    DateTime
+  logType    String
+  deviceId   String?
+  deviceName String?
+  ipAddress  String?
+  kioskId    String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, logTime])
+  @@index([logTime])
+}
+
+model Attendance {
+  id              String    @id @default(cuid())
+  employeeId      String
+  supplierId      String?
+  date            String
+  timeIn          DateTime?
+  timeOut         DateTime?
+  workingMinutes  Int       @default(0)
+  overtimeMinutes Int       @default(0)
+  lateMinutes     Int       @default(0)
+  breakMinutes    Int       @default(0)
+  status          String    @default("Absent")
+  createdFromLog  String?
+  adminEditReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  employee Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, date])
+  @@index([date])
+  @@index([supplierId, date])
+  @@index([status])
+}
+
+model KioskConfig {
+  id                     String   @id @default(cuid())
+  slug                   String   @unique
+  kioskName              String   @unique
+  deviceName             String?
+  location               String?
+  autoFullscreen         Boolean  @default(true)
+  autoResetAfterSuccess  Boolean  @default(true)
+  successScreenDuration  Int      @default(3)
+  cameraEnabled          Boolean  @default(false)
+  qrCodeEnabled          Boolean  @default(true)
+  rfidEnabled            Boolean  @default(false)
+  pinEnabled             Boolean  @default(false)
+  faceRecognitionEnabled Boolean  @default(false)
+  fingerprintEnabled     Boolean  @default(false)
+  workdayStart           String   @default("09:00")
+  lateGraceMinutes       Int      @default(15)
+  standardWorkMinutes    Int      @default(480)
+  halfDayMinutes         Int      @default(240)
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          String?
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  sessions      Session[]
+  accounts      Account[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
