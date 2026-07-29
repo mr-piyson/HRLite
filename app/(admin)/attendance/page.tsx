@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, Suspense } from "react";
+import { useState, useCallback, useMemo, Suspense } from "react";
 import { useQueryState } from "nuqs";
 import { useSession } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc/client";
@@ -24,7 +24,11 @@ import { AttendanceManualDialog } from "@/components/attendance/attendance-manua
 import { AttendanceApproveDialog } from "@/components/attendance/attendance-approve-dialog";
 import { todayKey } from "@/lib/utils";
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, ListOrdered, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronDown, ListOrdered, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import type { CalendarDay } from "@/server/services/attendance-calendar.service";
 
 const statusColors: Record<string, string> = {
   Present: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -87,6 +91,18 @@ function AttendancePageInner() {
     breakMinutes: number;
   } | null>(null);
   const { data, isLoading } = trpc.attendance.byDate.useQuery({ date });
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const { data: monthData } = trpc.attendance.calendarByMonth.useQuery(
+    { year: calendarMonth.getFullYear(), month: calendarMonth.getMonth() + 1 },
+    { enabled: calendarOpen },
+  );
+  const recordsByDate = useMemo(() => {
+    const map = new Map<string, CalendarDay>();
+    if (!monthData) return map;
+    for (const day of monthData) map.set(day.date, day);
+    return map;
+  }, [monthData]);
 
   const totalCount = data?.length ?? 0;
   const presentCount = data?.filter((a) => a.status === "Present" || a.status === "Late").length ?? 0;
@@ -117,12 +133,59 @@ function AttendancePageInner() {
   }, []);
 
   const colSpan = isAdmin ? 11 : 9;
+  const [yearStr, monthStr, dayStr] = date.split("-");
+  const parsedDate = new Date(+yearStr, +monthStr - 1, +dayStr);
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div className="flex items-end gap-2">
           <AttendanceManualDialog date={date} />
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger
+              render={
+                <Button variant="outline" size="sm">
+                  <CalendarDays className="mr-1 size-4" />
+                  {format(parsedDate, "MMM d, yyyy")}
+                  <ChevronDown className="ml-1 size-3 text-muted-foreground" />
+                </Button>
+              }
+            />
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={parsedDate}
+                onSelect={(day) => {
+                  if (day) {
+                    setDate(format(day, "yyyy-MM-dd"));
+                    setCalendarOpen(false);
+                  }
+                }}
+                onMonthChange={(d) => setCalendarMonth(d)}
+                components={{
+                  DayButton: (props) => {
+                    const dateKey = format(props.day.date, "yyyy-MM-dd");
+                    const dayData = recordsByDate.get(dateKey);
+                    return (
+                      <div className="relative">
+                        <CalendarDayButton {...props} />
+                        {dayData && (dayData.approvedCount > 0 || dayData.pendingCount > 0) && (
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                            {dayData.approvedCount > 0 && (
+                              <span className="size-1 rounded-full bg-emerald-500" />
+                            )}
+                            {dayData.pendingCount > 0 && (
+                              <span className="size-1 rounded-full bg-orange-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  },
+                }}
+              />
+            </PopoverContent>
+          </Popover>
           <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/attendance/logs" />}>
             <ListOrdered className="mr-1 size-4" />
             View Logs
