@@ -83,16 +83,21 @@ model Attendance {
   status          String    @default("Absent")
   createdFromLog  String?
   adminEditReason String?
+  approvalStatus  String    @default("pending")
+  approvedAt      DateTime?
+  approvedById    String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  employee Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  supplier  Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  approvedBy User?    @relation(fields: [approvedById], references: [id], onDelete: SetNull)
 
   @@unique([employeeId, date])
   @@index([date])
   @@index([supplierId, date])
   @@index([status])
+  @@index([approvalStatus])
 }
 
 model KioskConfig {
@@ -137,6 +142,7 @@ model User {
   banExpires    DateTime?
   sessions      Session[]
   accounts      Account[]
+  approvedAttendances Attendance[]
 
   @@unique([email])
   @@map("user")

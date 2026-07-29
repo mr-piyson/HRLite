@@ -7,6 +7,7 @@ import {
   adminUpdateAttendance,
   adminManualCreateAttendance,
 } from "@/server/services/admin-attendance.service"
+import { getCalendarData } from "@/server/services/attendance-calendar.service"
 import { DomainError } from "@/server/domain/attendance"
 
 const dateKey = z
@@ -125,11 +126,106 @@ export const attendanceRouter = router({
         if (!record) {
           throw new DomainError("Attendance record not found", "NOT_FOUND")
         }
+        if (record.approvalStatus === "approved") {
+          throw new DomainError("Cannot delete an approved attendance record", "FORBIDDEN")
+        }
         return attendanceRepository.delete(input.id)
       } catch (err) {
         mapDomainError(err)
       }
     }),
+
+  approve: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const record = await attendanceRepository.getById(input.id)
+        if (!record) {
+          throw new DomainError("Attendance record not found", "NOT_FOUND")
+        }
+        if (record.approvalStatus === "approved") {
+          throw new DomainError("Attendance record is already approved", "CONFLICT")
+        }
+        await attendanceRepository.update(input.id, {
+          approvalStatus: "approved",
+          approvedAt: new Date(),
+          approvedById: ctx.session.user.id,
+        })
+        await attendanceLogRepository.create({
+          employeeId: record.employeeId,
+          logTime: new Date(),
+          logType: "APPROVED",
+          deviceName: "Admin Panel",
+          notes: `Approved by ${ctx.session.user.name ?? ctx.session.user.id}`,
+          ipAddress: "admin",
+        })
+        return { success: true }
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
+
+  approveBatch: protectedProcedure
+    .input(z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      employeeIds: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const records = await attendanceRepository.listPendingForDate(input.date, input.employeeIds)
+        if (records.length === 0) {
+          throw new DomainError("No pending attendance records found to approve", "NOT_FOUND")
+        }
+        const now = new Date()
+        for (const record of records) {
+          await attendanceRepository.update(record.id, {
+            approvalStatus: "approved",
+            approvedAt: now,
+            approvedById: ctx.session.user.id,
+          })
+          await attendanceLogRepository.create({
+            employeeId: record.employeeId,
+            logTime: now,
+            logType: "APPROVED",
+            deviceName: "Admin Panel",
+            notes: `Approved by ${ctx.session.user.name ?? ctx.session.user.id}`,
+            ipAddress: "admin",
+          })
+        }
+        return { count: records.length }
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
+
+  revertApproval: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      try {
+        const record = await attendanceRepository.getById(input.id)
+        if (!record) {
+          throw new DomainError("Attendance record not found", "NOT_FOUND")
+        }
+        if (record.approvalStatus !== "approved") {
+          throw new DomainError("Attendance record is not approved", "CONFLICT")
+        }
+        await attendanceRepository.update(input.id, {
+          approvalStatus: "pending",
+          approvedAt: null,
+          approvedById: null,
+        })
+        return { success: true }
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
+
+  calendarByMonth: protectedProcedure
+    .input(z.object({
+      year: z.number().int().min(2000).max(2100),
+      month: z.number().int().min(1).max(12),
+    }))
+    .query(({ input }) => getCalendarData(input.year, input.month)),
 
   regenerateFromLogs: protectedProcedure
     .input(z.object({ id: z.string() }))

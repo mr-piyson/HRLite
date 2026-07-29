@@ -135,15 +135,34 @@ export const attendanceRepository = {
   forDate(date: string) {
     return prisma.attendance.findMany({
       where: { date },
-      include: { employee: true, supplier: true },
+      include: { employee: true, supplier: true, approvedBy: { select: { id: true, name: true } } },
       orderBy: { timeIn: "asc" },
     })
   },
   forRange(from: string, to: string) {
     return prisma.attendance.findMany({
       where: { date: { gte: from, lte: to } },
-      include: { employee: true, supplier: true },
+      include: { employee: true, supplier: true, approvedBy: { select: { id: true, name: true } } },
       orderBy: [{ date: "asc" }, { timeIn: "asc" }],
+    })
+  },
+  forMonth(year: number, month: number) {
+    const prefix = `${year}-${String(month).padStart(2, "0")}`
+    return prisma.attendance.findMany({
+      where: { date: { startsWith: prefix } },
+      include: {
+        employee: { select: { id: true, fullName: true, empCode: true } },
+      },
+      orderBy: [{ date: "asc" }, { timeIn: "asc" }],
+    })
+  },
+  listPendingForDate(date: string, employeeIds?: string[]) {
+    return prisma.attendance.findMany({
+      where: {
+        date,
+        approvalStatus: "pending",
+        ...(employeeIds ? { employeeId: { in: employeeIds } } : {}),
+      },
     })
   },
   getDaily(employeeId: string, date: string) {

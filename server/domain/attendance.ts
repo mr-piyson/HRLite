@@ -38,6 +38,18 @@ export const AttendanceStatusLabel: Record<AttendanceStatus, string> = {
   Leave: "Leave",
 }
 
+/** Approval lifecycle status for attendance records. */
+export const ApprovalStatus = {
+  Pending: "pending",
+  Approved: "approved",
+} as const
+export type ApprovalStatus = (typeof ApprovalStatus)[keyof typeof ApprovalStatus]
+
+export const ApprovalStatusLabel: Record<ApprovalStatus, string> = {
+  pending: "Pending",
+  approved: "Approved",
+}
+
 /** Identification methods supported by the kiosk (Strategy Pattern keys). */
 export const IdentificationMethod = {
   CODE: "CODE",

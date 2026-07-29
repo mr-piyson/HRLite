@@ -79,6 +79,9 @@ export async function adminUpdateAttendance(
   if (!record) {
     throw new DomainError("Attendance record not found", "NOT_FOUND")
   }
+  if (record.approvalStatus === "approved") {
+    throw new DomainError("Cannot edit an approved attendance record", "FORBIDDEN")
+  }
 
   const config = await kioskConfigRepository.getActive()
   const policy: AttendancePolicy = config
