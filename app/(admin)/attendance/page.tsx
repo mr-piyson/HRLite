@@ -2,6 +2,7 @@
 
 import { useState, useCallback, Suspense } from "react";
 import { useQueryState } from "nuqs";
+import { useSession } from "@/lib/auth-client";
 import { trpc } from "@/lib/trpc/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -69,11 +70,10 @@ function AdminTooltip({
   );
 }
 
-type Mode = "view" | "revise";
-
 function AttendancePageInner() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
   const [date, setDate] = useQueryState("date", { defaultValue: todayKey(), clearOnDefault: true });
-  const [mode, setMode] = useState<Mode>("view");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [editingRecord, setEditingRecord] = useState<{
@@ -116,17 +116,7 @@ function AttendancePageInner() {
     });
   }, []);
 
-  const switchToRevise = useCallback(() => {
-    setMode("revise");
-    setSelectedIds(new Set());
-  }, []);
-
-  const switchToView = useCallback(() => {
-    setMode("view");
-    setSelectedIds(new Set());
-  }, []);
-
-  const colSpan = mode === "revise" ? 11 : 10;
+  const colSpan = isAdmin ? 11 : 9;
 
   return (
     <div className="space-y-6">
@@ -140,28 +130,6 @@ function AttendancePageInner() {
           <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/attendance/calendar" />}>
             <CalendarDays className="mr-1 size-4" />
             Calendar
-          </Button>
-        </div>
-      </div>
-
-      {/* Mode Toggle + Summary Cards */}
-      <div className="flex items-center gap-4">
-        <div className="inline-flex rounded-lg border p-0.5">
-          <Button
-            variant={mode === "view" ? "default" : "ghost"}
-            size="sm"
-            onClick={switchToView}
-            className="rounded-md"
-          >
-            View
-          </Button>
-          <Button
-            variant={mode === "revise" ? "default" : "ghost"}
-            size="sm"
-            onClick={switchToRevise}
-            className="rounded-md"
-          >
-            Revise & Approve
           </Button>
         </div>
       </div>
@@ -210,8 +178,8 @@ function AttendancePageInner() {
         </Card>
       </div>
 
-      {/* Revise Mode Controls */}
-      {mode === "revise" && (
+      {/* Admin Controls — batch approve */}
+      {isAdmin && (
         <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
           <Checkbox
             checked={selectedIds.size > 0 && selectedIds.size === pendingRecords.length}
@@ -246,7 +214,7 @@ function AttendancePageInner() {
         <Table>
           <TableHeader>
             <TableRow>
-              {mode === "revise" && <TableHead className="w-10"></TableHead>}
+              {isAdmin && <TableHead className="w-10"></TableHead>}
               <TableHead>Employee</TableHead>
               <TableHead>Code</TableHead>
               <TableHead>Supplier</TableHead>
@@ -256,7 +224,7 @@ function AttendancePageInner() {
               <TableHead className="text-right">Overtime</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Approval</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
+              {isAdmin && <TableHead className="w-[60px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -275,9 +243,9 @@ function AttendancePageInner() {
                   return (
                     <TableRow
                       key={a.id}
-                      className={isApproved ? "opacity-70" : "cursor-pointer"}
+                      className={isAdmin && !isApproved ? "cursor-pointer" : ""}
                       onClick={() => {
-                        if (isApproved) return;
+                        if (!isAdmin || isApproved) return;
                         setEditingRecord({
                           id: a.id,
                           employee: { fullName: a.employee.fullName, empCode: a.employee.empCode },
@@ -290,7 +258,7 @@ function AttendancePageInner() {
                         });
                       }}
                     >
-                      {mode === "revise" && (
+                      {isAdmin && (
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             checked={selectedIds.has(a.id)}
@@ -342,61 +310,63 @@ function AttendancePageInner() {
                             a.approvalStatus}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button variant="ghost" size="icon" className="size-8">
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                          ></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              disabled={isApproved}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isApproved) return;
-                                setEditingRecord({
-                                  id: a.id,
-                                  employee: { fullName: a.employee.fullName, empCode: a.employee.empCode },
-                                  date: a.date,
-                                  timeIn: a.timeIn,
-                                  timeOut: a.timeOut,
-                                  workingMinutes: a.workingMinutes,
-                                  status: a.status,
-                                  breakMinutes: a.breakMinutes,
-                                });
-                              }}
-                            >
-                              <Pencil className="mr-2 size-4" />
-                              {isApproved ? "Approved — locked" : "Edit"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              disabled={isApproved}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isApproved) return;
-                                setEditingRecord({
-                                  id: a.id,
-                                  employee: { fullName: a.employee.fullName, empCode: a.employee.empCode },
-                                  date: a.date,
-                                  timeIn: a.timeIn,
-                                  timeOut: a.timeOut,
-                                  workingMinutes: a.workingMinutes,
-                                  status: a.status,
-                                  breakMinutes: a.breakMinutes,
-                                });
-                              }}
-                            >
-                              <Trash2 className="mr-2 size-4" />
-                              {isApproved ? "Approved — locked" : "Delete"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button variant="ghost" size="icon" className="size-8">
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                            ></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={isApproved}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isApproved) return;
+                                  setEditingRecord({
+                                    id: a.id,
+                                    employee: { fullName: a.employee.fullName, empCode: a.employee.empCode },
+                                    date: a.date,
+                                    timeIn: a.timeIn,
+                                    timeOut: a.timeOut,
+                                    workingMinutes: a.workingMinutes,
+                                    status: a.status,
+                                    breakMinutes: a.breakMinutes,
+                                  });
+                                }}
+                              >
+                                <Pencil className="mr-2 size-4" />
+                                {isApproved ? "Approved — locked" : "Edit"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                disabled={isApproved}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isApproved) return;
+                                  setEditingRecord({
+                                    id: a.id,
+                                    employee: { fullName: a.employee.fullName, empCode: a.employee.empCode },
+                                    date: a.date,
+                                    timeIn: a.timeIn,
+                                    timeOut: a.timeOut,
+                                    workingMinutes: a.workingMinutes,
+                                    status: a.status,
+                                    breakMinutes: a.breakMinutes,
+                                  });
+                                }}
+                              >
+                                <Trash2 className="mr-2 size-4" />
+                                {isApproved ? "Approved — locked" : "Delete"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
