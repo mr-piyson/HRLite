@@ -2,10 +2,19 @@ import { initTRPC, TRPCError } from "@trpc/server"
 import superjson from "superjson"
 import { ZodError } from "zod"
 import { DomainError } from "@/server/domain/attendance"
+import { auth } from "@/lib/auth"
 
 export interface Context {
   ipAddress?: string
   deviceName?: string
+  session?: {
+    user: {
+      id: string
+      email: string
+      name: string
+      role?: string | null
+    }
+  } | null
 }
 
 export async function createContext(opts?: {
@@ -17,7 +26,18 @@ export async function createContext(opts?: {
     headers?.get("x-real-ip") ??
     undefined
   const deviceName = headers?.get("user-agent") ?? undefined
-  return { ipAddress, deviceName }
+
+  let session: Context["session"] = null
+  if (headers) {
+    try {
+      const result = await auth.api.getSession({ headers })
+      session = result
+    } catch {
+      // Not authenticated — session stays null
+    }
+  }
+
+  return { ipAddress, deviceName, session }
 }
 
 const t = initTRPC.context<Context>().create({
@@ -38,6 +58,21 @@ const t = initTRPC.context<Context>().create({
 
 export const router = t.router
 export const publicProcedure = t.procedure
+
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.session?.user) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "You must be signed in to access this resource",
+    })
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      session: ctx.session,
+    },
+  })
+})
 
 export function mapDomainError(err: unknown): never {
   if (err instanceof DomainError) {

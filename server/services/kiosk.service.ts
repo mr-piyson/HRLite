@@ -1,3 +1,4 @@
+import { prisma } from "@/server/db/prisma"
 import {
   attendanceLogRepository,
   attendanceRepository,
@@ -58,25 +59,28 @@ export async function punch(input: PunchInput): Promise<PunchResult> {
   const logType = open ? LogType.OUT : LogType.IN
 
   const since = new Date(now.getTime() - DUPLICATE_WINDOW_SECONDS * 1000)
-  const lastLog = await attendanceLogRepository.findLastSince(
-    employee.id,
-    since,
-  )
-  if (lastLog && lastLog.logType === logType) {
-    throw new DomainError(
-      "Duplicate scan detected. Please wait a moment.",
-      "CONFLICT",
-    )
-  }
 
-  await attendanceLogRepository.create({
-    employeeId: employee.id,
-    logTime: now,
-    logType,
-    deviceId: input.context?.deviceId,
-    deviceName: input.context?.deviceName,
-    ipAddress: input.context?.ipAddress,
-    kioskId: input.context?.kioskId,
+  await prisma.$transaction(async () => {
+    const lastLog = await attendanceLogRepository.findLastSince(
+      employee.id,
+      since,
+    )
+    if (lastLog && lastLog.logType === logType) {
+      throw new DomainError(
+        "Duplicate scan detected. Please wait a moment.",
+        "CONFLICT",
+      )
+    }
+
+    await attendanceLogRepository.create({
+      employeeId: employee.id,
+      logTime: now,
+      logType,
+      deviceId: input.context?.deviceId,
+      deviceName: input.context?.deviceName,
+      ipAddress: input.context?.ipAddress,
+      kioskId: input.context?.kioskId,
+    })
   })
 
   const attendance = await regenerateAttendance(
@@ -127,6 +131,13 @@ export interface EmployeeWithStatus {
   isClockedIn: boolean
 }
 
+function dayBounds(dateKey: string): { start: Date; end: Date } {
+  const [y, m, d] = dateKey.split("-").map(Number)
+  const start = new Date(y, m - 1, d)
+  const end = new Date(y, m - 1, d + 1)
+  return { start, end }
+}
+
 export async function getActiveEmployeesWithStatus(): Promise<EmployeeWithStatus[]> {
   const [employees, config] = await Promise.all([
     employeeRepository.listActive(),
@@ -135,26 +146,40 @@ export async function getActiveEmployeesWithStatus(): Promise<EmployeeWithStatus
 
   const now = new Date()
   const dateKey = toDateKey(now)
+  const { start, end } = dayBounds(dateKey)
 
-  const results = await Promise.all(
-    employees.map(async (emp) => {
-      const [daily, open] = await Promise.all([
-        attendanceRepository.getDaily(emp.id, dateKey),
-        hasOpenSession(emp.id, dateKey),
-      ])
-      return {
-        id: emp.id,
-        fullName: emp.fullName,
-        empCode: emp.empCode,
-        designation: emp.designation,
-        photo: emp.photo,
-        attended: daily !== null,
-        isClockedIn: open,
-      }
+  const [allAttendance, allLogs] = await Promise.all([
+    attendanceRepository.forDate(dateKey),
+    prisma.attendanceLog.findMany({
+      where: {
+        employeeId: { in: employees.map((e) => e.id) },
+        logTime: { gte: start, lt: end },
+      },
+      orderBy: { logTime: "desc" },
+      select: { employeeId: true, logType: true },
     }),
+  ])
+
+  const attendanceByEmployee = new Map(
+    allAttendance.map((a) => [a.employeeId, a]),
   )
 
-  return results
+  const lastLogByEmployee = new Map<string, string>()
+  for (const log of allLogs) {
+    if (!lastLogByEmployee.has(log.employeeId)) {
+      lastLogByEmployee.set(log.employeeId, log.logType)
+    }
+  }
+
+  return employees.map((emp) => ({
+    id: emp.id,
+    fullName: emp.fullName,
+    empCode: emp.empCode,
+    designation: emp.designation,
+    photo: emp.photo,
+    attended: attendanceByEmployee.has(emp.id),
+    isClockedIn: lastLogByEmployee.get(emp.id) === LogType.IN,
+  }))
 }
 
 export function generateKioskToken(): string {
@@ -196,21 +221,24 @@ export async function adminPunch(employeeId: string): Promise<PunchResult> {
   const logType = open ? LogType.OUT : LogType.IN
 
   const since = new Date(now.getTime() - DUPLICATE_WINDOW_SECONDS * 1000)
-  const lastLog = await attendanceLogRepository.findLastSince(
-    employee.id,
-    since,
-  )
-  if (lastLog && lastLog.logType === logType) {
-    throw new DomainError(
-      "Duplicate scan detected. Please wait a moment.",
-      "CONFLICT",
-    )
-  }
 
-  await attendanceLogRepository.create({
-    employeeId: employee.id,
-    logTime: now,
-    logType,
+  await prisma.$transaction(async () => {
+    const lastLog = await attendanceLogRepository.findLastSince(
+      employee.id,
+      since,
+    )
+    if (lastLog && lastLog.logType === logType) {
+      throw new DomainError(
+        "Duplicate scan detected. Please wait a moment.",
+        "CONFLICT",
+      )
+    }
+
+    await attendanceLogRepository.create({
+      employeeId: employee.id,
+      logTime: now,
+      logType,
+    })
   })
 
   const attendance = await regenerateAttendance(employee.id, dateKey)

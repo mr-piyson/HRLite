@@ -118,6 +118,20 @@ export default function KioskSlugPage() {
     { enabled: authState === "valid" },
   )
 
+  const scheduleAutoReset = useCallback(() => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+    const duration = (config?.successScreenDuration ?? 3) * 1000
+    resetTimerRef.current = setTimeout(() => {
+      setState("idle")
+      setCode("")
+      setEmployee(null)
+      inputRef.current?.focus()
+    }, duration)
+  }, [config?.successScreenDuration])
+
+  const scheduleAutoResetRef = useRef(scheduleAutoReset)
+  scheduleAutoResetRef.current = scheduleAutoReset
+
   const punchMutation = trpc.kiosk.punch.useMutation({
     onSuccess: (result) => {
       setAction(result.action)
@@ -131,7 +145,7 @@ export default function KioskSlugPage() {
         }),
       )
       setState("success")
-      scheduleAutoReset()
+      scheduleAutoResetRef.current()
     },
     onError: (err) => {
       toast.error(err.message)
@@ -160,17 +174,6 @@ export default function KioskSlugPage() {
       document.documentElement.requestFullscreen().catch(() => {})
     }
   }, [config?.autoFullscreen])
-
-  const scheduleAutoReset = useCallback(() => {
-    if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
-    const duration = (config?.successScreenDuration ?? 3) * 1000
-    resetTimerRef.current = setTimeout(() => {
-      setState("idle")
-      setCode("")
-      setEmployee(null)
-      inputRef.current?.focus()
-    }, duration)
-  }, [config?.successScreenDuration])
 
   const handleSubmit = useCallback(async () => {
     if (!code.trim()) return

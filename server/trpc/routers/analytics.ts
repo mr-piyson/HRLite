@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { router, publicProcedure, mapDomainError } from "@/server/trpc/trpc"
+import { router, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
 import { getDashboard } from "@/server/services/dashboard.service"
 import { buildReport, buildDailyBreakdownReport } from "@/server/services/report.service"
 import { attendanceRepository, attendanceLogRepository, employeeRepository } from "@/server/repositories"
@@ -14,25 +14,25 @@ const dateKey = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected yyyy-mm-dd")
 
 export const dashboardRouter = router({
-  today: publicProcedure
+  today: protectedProcedure
     .input(z.object({ date: dateKey }))
     .query(({ input }) => getDashboard(input.date)),
 })
 
 export const attendanceRouter = router({
-  byDate: publicProcedure
+  byDate: protectedProcedure
     .input(z.object({ date: dateKey }))
     .query(({ input }) =>
       attendanceRepository.forDate(input.date),
     ),
 
-  logs: publicProcedure
+  logs: protectedProcedure
     .input(z.object({ take: z.number().int().min(1).max(100).default(50) }))
     .query(({ input }) =>
       attendanceLogRepository.recent(input.take),
     ),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input }) => {
       const record = attendanceRepository.getById(input.id)
@@ -42,7 +42,7 @@ export const attendanceRouter = router({
       return record
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -80,7 +80,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  manualCreate: publicProcedure
+  manualCreate: protectedProcedure
     .input(
       z.object({
         employeeId: z.string(),
@@ -117,7 +117,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       try {
@@ -131,7 +131,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  regenerateFromLogs: publicProcedure
+  regenerateFromLogs: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       const { regenerateAttendance } = await import("@/server/services/attendance.service")
@@ -144,13 +144,13 @@ export const attendanceRouter = router({
 })
 
 export const attendanceLogRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ take: z.number().int().min(1).max(200).default(50) }))
     .query(({ input }) =>
       attendanceLogRepository.recent(input.take),
     ),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         employeeId: z.string(),
@@ -185,7 +185,7 @@ export const attendanceLogRouter = router({
       return log
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -222,7 +222,7 @@ export const attendanceLogRouter = router({
       return updated
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       const log = await attendanceLogRepository.getById(input.id)
@@ -243,13 +243,13 @@ export const attendanceLogRouter = router({
 })
 
 export const reportRouter = router({
-  attendance: publicProcedure
+  attendance: protectedProcedure
     .input(z.object({ from: dateKey, to: dateKey }))
     .query(({ input }) =>
       buildReport(input.from, input.to),
     ),
 
-  dailyBreakdown: publicProcedure
+  dailyBreakdown: protectedProcedure
     .input(z.object({ from: dateKey, to: dateKey }))
     .query(({ input }) =>
       buildDailyBreakdownReport(input.from, input.to),

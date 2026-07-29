@@ -1,20 +1,20 @@
 import { z } from "zod"
-import { router, publicProcedure, mapDomainError } from "@/server/trpc/trpc"
+import { router, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
 import {
   employeeRepository,
   supplierRepository,
 } from "@/server/repositories"
 
 export const supplierRouter = router({
-  list: publicProcedure.query(() => supplierRepository.list()),
+  list: protectedProcedure.query(() => supplierRepository.list()),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input }) =>
       supplierRepository.getById(input.id),
     ),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         supplierCode: z.string().min(1),
@@ -29,7 +29,7 @@ export const supplierRouter = router({
       supplierRepository.create(input),
     ),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -57,7 +57,7 @@ export const supplierRouter = router({
       }
     }),
 
-  setActive: publicProcedure
+  setActive: protectedProcedure
     .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(({ input }) =>
       supplierRepository.update(input.id, { isActive: input.isActive }),
@@ -65,15 +65,15 @@ export const supplierRouter = router({
 })
 
 export const employeeRouter = router({
-  list: publicProcedure.query(() => employeeRepository.list()),
+  list: protectedProcedure.query(() => employeeRepository.list()),
 
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input }) =>
       employeeRepository.getById(input.id),
     ),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(
       z.object({
         empCode: z.string().min(1),
@@ -97,7 +97,7 @@ export const employeeRouter = router({
       }),
     ),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -134,7 +134,7 @@ export const employeeRouter = router({
       }
     }),
 
-  setActive: publicProcedure
+  setActive: protectedProcedure
     .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(({ input }) =>
       employeeRepository.update(input.id, { isActive: input.isActive }),

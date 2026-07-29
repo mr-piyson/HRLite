@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
 
 const protectedRoutes = [
   "/dashboard",
@@ -9,13 +8,16 @@ const protectedRoutes = [
   "/attendance",
   "/reports",
   "/settings",
-  "/kiosk",
 ]
 
 const authRoutes = ["/sign-in", "/sign-up"]
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next()
+  }
 
   const isProtected = protectedRoutes.some((route) =>
     pathname.startsWith(route),
@@ -27,7 +29,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: request.headers,
   })
 
   if (isProtected && !session) {
@@ -51,7 +53,6 @@ export const config = {
     "/attendance/:path*",
     "/reports/:path*",
     "/settings/:path*",
-    "/kiosk/:path*",
     "/sign-in",
     "/sign-up",
   ],

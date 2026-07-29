@@ -119,6 +119,8 @@ model KioskConfig {
   isActive               Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+
+  @@index([accessToken])
 }
 
 model User {

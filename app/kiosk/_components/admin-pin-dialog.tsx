@@ -98,10 +98,10 @@ export function AdminPinDialog({
       })
       setPin(newPin)
       if (digits.length === 4) {
-        verifyMutation.mutate({ pin: newPin.join("") })
+        verifyMutation.mutate({ pin: newPin.join(""), kioskToken })
       }
     },
-    [verifyMutation],
+    [verifyMutation, kioskToken],
   )
 
   return (

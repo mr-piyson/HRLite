@@ -1,3 +1,10 @@
+function escapeCell(str: string): string {
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
+
 export function downloadCSV(
   filename: string,
   headers: string[],
@@ -8,25 +15,15 @@ export function downloadCSV(
 
   if (meta) {
     for (const [key, val] of Object.entries(meta)) {
-      const escaped = val.includes(",") ? `"${val}"` : val
-      parts.push(`${key},${escaped}`)
+      parts.push(`${escapeCell(key)},${escapeCell(val)}`)
     }
     parts.push("")
   }
 
-  parts.push(headers.join(","))
+  parts.push(headers.map(escapeCell).join(","))
 
   for (const r of rows) {
-    parts.push(
-      r
-        .map((cell) => {
-          const str = String(cell)
-          return str.includes(",") || str.includes('"') || str.includes("\n")
-            ? `"${str.replace(/"/g, '""')}"`
-            : str
-        })
-        .join(","),
-    )
+    parts.push(r.map((cell) => escapeCell(String(cell))).join(","))
   }
 
   const csvContent = parts.join("\n")
@@ -37,5 +34,5 @@ export function downloadCSV(
   a.href = url
   a.download = filename.endsWith(".csv") ? filename : `${filename}.csv`
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
