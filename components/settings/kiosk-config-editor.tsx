@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,7 +19,7 @@ import {
 import { trpc } from "@/lib/trpc/client"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Copy, CheckCircle2, ExternalLink } from "lucide-react"
+import { Copy, CheckCircle2, ExternalLink, KeyRound, Eye, EyeOff } from "lucide-react"
 import type { KioskConfig } from "@prisma/client"
 
 interface KioskConfigEditorProps {
@@ -45,6 +45,11 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
   const [standardWorkMinutes, setStandardWorkMinutes] = useState(config?.standardWorkMinutes ?? 480)
   const [halfDayMinutes, setHalfDayMinutes] = useState(config?.halfDayMinutes ?? 240)
 
+  const [adminPin, setAdminPin] = useState(config?.adminPin ?? "")
+  const [showAdminPin, setShowAdminPin] = useState(false)
+  const [showToken, setShowToken] = useState(false)
+  const [showRegenerateAlert, setShowRegenerateAlert] = useState(false)
+
   const utils = trpc.useUtils()
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
 
@@ -63,6 +68,16 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
       utils.settings.active.invalidate()
       toast.success("Kiosk configuration deleted")
       setShowDeleteAlert(false)
+    },
+    onError: (err) => toast.error(err.message),
+  })
+
+  const regenerateTokenMutation = trpc.settings.regenerateToken.useMutation({
+    onSuccess: (result) => {
+      utils.settings.list.invalidate()
+      utils.settings.active.invalidate()
+      setShowRegenerateAlert(false)
+      toast.success("Access token regenerated")
     },
     onError: (err) => toast.error(err.message),
   })
@@ -102,6 +117,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
         lateGraceMinutes,
         standardWorkMinutes,
         halfDayMinutes,
+        adminPin: adminPin || undefined,
       },
     })
   }
@@ -115,7 +131,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
           <CardTitle className="text-sm font-medium">General</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
               <Label htmlFor="kioskName">Kiosk Name *</Label>
               <Input id="kioskName" value={kioskName} onChange={(e) => setKioskName(e.target.value)} required />
@@ -158,6 +174,107 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Access Token */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Access Token</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Token</Label>
+              <button
+                type="button"
+                onClick={() => setShowToken(!showToken)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showToken ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 truncate text-sm font-mono">
+                {showToken
+                  ? config?.accessToken ?? "Not set"
+                  : config?.accessToken
+                    ? "•".repeat(Math.min(config.accessToken.length, 48))
+                    : "Not set"}
+              </code>
+              {config?.accessToken && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(config.accessToken!)
+                    toast.success("Token copied to clipboard")
+                  }}
+                  className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <Copy className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {config?.slug && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <Label className="text-xs text-muted-foreground">Kiosk URL (with token)</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <code className="flex-1 truncate text-sm font-mono">
+                  {typeof window !== "undefined"
+                    ? `${window.location.origin}/kiosk/${config.slug}?token=${config?.accessToken ?? ""}`
+                    : `/kiosk/${config.slug}?token=${config?.accessToken ?? ""}`}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = `${window.location.origin}/kiosk/${config.slug}?token=${config.accessToken}`
+                    navigator.clipboard.writeText(url)
+                    toast.success("Kiosk URL with token copied")
+                  }}
+                  className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <Copy className="size-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Admin PIN</Label>
+              <button
+                type="button"
+                onClick={() => setShowAdminPin(!showAdminPin)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showAdminPin ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground/70 mb-2">
+              4-digit PIN required to access the admin drawer on this kiosk terminal
+            </p>
+            <Input
+              id="adminPin"
+              type={showAdminPin ? "text" : "password"}
+              maxLength={4}
+              value={adminPin}
+              onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="Set admin PIN"
+              className="w-32 font-mono"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowRegenerateAlert(true)}
+          >
+            <KeyRound className="mr-1.5 size-3.5" />
+            Regenerate Token
+          </Button>
         </CardContent>
       </Card>
 
@@ -224,7 +341,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
           <CardTitle className="text-sm font-medium">Attendance Policy</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="workdayStart">Workday Start Time</Label>
               <Input id="workdayStart" type="time" value={workdayStart} onChange={(e) => setWorkdayStart(e.target.value)} />
@@ -260,6 +377,26 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
         </Button>
       </div>
     </form>
+
+    <AlertDialog open={showRegenerateAlert} onOpenChange={setShowRegenerateAlert}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Regenerate Access Token</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to regenerate the access token for "{config?.kioskName}"?
+            The current token will stop working immediately, and any kiosk using it will lose access until updated.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => regenerateTokenMutation.mutate({ id: config!.id })}
+          >
+            {regenerateTokenMutation.isPending ? "Regenerating..." : "Regenerate"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
       <AlertDialogContent>

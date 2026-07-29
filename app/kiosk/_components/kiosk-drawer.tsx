@@ -9,13 +9,14 @@ import { XIcon, Search, CheckCircle2, Circle, LogIn, LogOut, User } from "lucide
 interface KioskDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  kioskToken: string
 }
 
-export function KioskDrawer({ open, onOpenChange }: KioskDrawerProps) {
+export function KioskDrawer({ open, onOpenChange, kioskToken }: KioskDrawerProps) {
   const [search, setSearch] = useState("")
 
   const { data: employees = [], refetch } =
-    trpc.kiosk.getActiveEmployees.useQuery(undefined, {
+    trpc.kiosk.getActiveEmployees.useQuery({ kioskToken }, {
       enabled: open,
     })
 
@@ -33,9 +34,9 @@ export function KioskDrawer({ open, onOpenChange }: KioskDrawerProps) {
 
   const handleEmployeeClick = useCallback(
     (employeeId: string) => {
-      punchMutation.mutate({ employeeId })
+      punchMutation.mutate({ employeeId, kioskToken })
     },
-    [punchMutation],
+    [punchMutation, kioskToken],
   )
 
   const filtered = search.trim()

@@ -157,6 +157,28 @@ export async function getActiveEmployeesWithStatus(): Promise<EmployeeWithStatus
   return results
 }
 
+export function generateKioskToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
+}
+
+export async function validateKioskToken(
+  token: string,
+): Promise<{ valid: boolean; kioskName?: string; slug?: string }> {
+  const config = await kioskConfigRepository.getByToken(token)
+  if (!config) return { valid: false }
+  return { valid: true, kioskName: config.kioskName, slug: config.slug }
+}
+
+export async function regenerateKioskToken(
+  configId: string,
+): Promise<string> {
+  const token = generateKioskToken()
+  await kioskConfigRepository.updateToken(configId, token)
+  return token
+}
+
 export async function adminPunch(employeeId: string): Promise<PunchResult> {
   const employee = await employeeRepository.getById(employeeId)
 

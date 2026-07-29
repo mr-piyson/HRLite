@@ -21,7 +21,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
         {settingGroups.map((group) => (
           <Link key={group.href} href={group.href} className="block">
             <Card className="transition-colors hover:bg-accent/50">

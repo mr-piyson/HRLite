@@ -15,12 +15,14 @@ interface AdminPinDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onVerified: () => void
+  kioskToken: string
 }
 
 export function AdminPinDialog({
   open,
   onOpenChange,
   onVerified,
+  kioskToken,
 }: AdminPinDialogProps) {
   const [pin, setPin] = useState<string[]>(["", "", "", ""])
   const [error, setError] = useState(false)
@@ -67,10 +69,10 @@ export function AdminPinDialog({
 
       const fullPin = newPin.join("")
       if (fullPin.length === 4) {
-        verifyMutation.mutate({ pin: fullPin })
+        verifyMutation.mutate({ pin: fullPin, kioskToken })
       }
     },
-    [pin, verifyMutation],
+    [pin, verifyMutation, kioskToken],
   )
 
   const handleKeyDown = useCallback(

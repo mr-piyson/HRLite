@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Monitor, CheckCircle2, Copy, ExternalLink } from "lucide-react";
+import { Plus, Monitor, CheckCircle2, Copy, ExternalLink, Eye, EyeOff } from "lucide-react";
 
 function generateSlug(name: string): string {
   const base = name
@@ -35,21 +35,20 @@ function CopyButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   }, [text]);
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="size-6 shrink-0"
+    <button
+      type="button"
       onClick={(e) => {
         e.stopPropagation();
         handleCopy();
       }}
+      className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
     >
       {copied ? (
         <CheckCircle2 className="size-3 text-emerald-500" />
       ) : (
         <Copy className="size-3 text-muted-foreground" />
       )}
-    </Button>
+    </button>
   );
 }
 
@@ -58,6 +57,7 @@ function CreateKioskDialog() {
   const [kioskName, setKioskName] = useState("");
   const [deviceName, setDeviceName] = useState("");
   const [location, setLocation] = useState("");
+  const [adminPin, setAdminPin] = useState("");
 
   const utils = trpc.useUtils();
   const createMutation = trpc.settings.create.useMutation({
@@ -94,6 +94,7 @@ function CreateKioskDialog() {
       lateGraceMinutes: 15,
       standardWorkMinutes: 480,
       halfDayMinutes: 240,
+      adminPin: adminPin || undefined,
     });
   };
 
@@ -140,6 +141,19 @@ function CreateKioskDialog() {
               placeholder="e.g. Site A - Main Entrance"
             />
           </div>
+          <div className="space-y-1">
+            <Label htmlFor="kkAdminPin">Admin PIN</Label>
+            <Input
+              id="kkAdminPin"
+              type="password"
+              maxLength={4}
+              value={adminPin}
+              onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="4-digit PIN for admin drawer"
+              className="font-mono"
+            />
+            <p className="text-xs text-muted-foreground">Optional. Used to access the admin drawer on the kiosk.</p>
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
@@ -172,9 +186,9 @@ export default function KioskConfigPage() {
         <CreateKioskDialog />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
         {/* Config list sidebar */}
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle className="text-sm font-medium">Kiosk Devices</CardTitle>
           </CardHeader>
@@ -222,7 +236,9 @@ export default function KioskConfigPage() {
         </Card>
 
         {/* Editor */}
-        <KioskConfigEditor config={selected ?? null} isLoading={isLoading} />
+        <div className="min-w-0">
+          <KioskConfigEditor config={selected ?? null} isLoading={isLoading} />
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { router, publicProcedure } from "@/server/trpc/trpc"
 import { kioskConfigRepository } from "@/server/repositories"
+import { regenerateKioskToken, generateKioskToken } from "@/server/services/kiosk.service"
 
 const configShape = {
   kioskName: z.string().min(1),
@@ -20,6 +21,7 @@ const configShape = {
   lateGraceMinutes: z.number().int().min(0).max(240),
   standardWorkMinutes: z.number().int().min(60).max(1440),
   halfDayMinutes: z.number().int().min(30).max(1440),
+  adminPin: z.string().optional(),
 }
 
 export const settingsRouter = router({
@@ -33,9 +35,17 @@ export const settingsRouter = router({
 
   create: publicProcedure
     .input(z.object(configShape))
-    .mutation(({ input }) =>
-      kioskConfigRepository.create(input),
-    ),
+    .mutation(async ({ input }) => {
+      const token = generateKioskToken()
+      return kioskConfigRepository.create({ ...input, accessToken: token })
+    }),
+
+  regenerateToken: publicProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const token = await regenerateKioskToken(input.id)
+      return { token }
+    }),
 
   update: publicProcedure
     .input(z.object({ id: z.string(), data: z.object(configShape).partial() }))
