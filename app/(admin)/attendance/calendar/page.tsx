@@ -139,65 +139,73 @@ export default function AttendanceCalendarPage() {
               const today = isToday(day);
 
               return (
-                <TooltipProvider key={i}>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <div
-                          onClick={() => inMonth && handleDayClick(day)}
-                          className={`relative min-h-[90px] border-b border-r p-2 last:border-r-0 transition-colors ${
-                            inMonth ? "cursor-pointer hover:bg-muted/50" : "bg-muted/20 cursor-default"
-                          } ${dayData?.allApproved && inMonth ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}
-                            ${today && !dayData?.allApproved ? "bg-accent/30" : ""}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`text-sm font-medium ${
-                                !inMonth ? "text-muted-foreground/40" : ""
-                              } ${today && !dayData?.allApproved ? "flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground" : ""}`}
-                            >
-                              {format(day, "d")}
-                            </span>
-                            {dayData?.allApproved && inMonth && (
-                              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓</span>
-                            )}
-                          </div>
-                          {inMonth && dayData && dayData.records.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {dayData.approvedCount > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <span className="inline-block size-2 rounded-full bg-emerald-500" />
-                                  <span className="text-xs tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
-                                    {dayData.approvedCount}
-                                  </span>
-                                </div>
-                              )}
-                              {dayData.pendingCount > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <span className="inline-block size-2 rounded-full bg-orange-500" />
-                                  <span className="text-xs tabular-nums text-orange-600 dark:text-orange-400 font-medium">
-                                    {dayData.pendingCount}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
+                <HoverCard key={i}>
+                  <HoverCardTrigger
+                    render={
+                      <div
+                        onClick={() => inMonth && handleDayClick(day)}
+                        className={`relative min-h-[90px] border-b border-r p-2 last:border-r-0 transition-colors ${
+                          inMonth ? "cursor-pointer hover:bg-muted/50" : "bg-muted/20 cursor-default"
+                          } ${today ? "ring-1 ring-primary" : ""}
+                        } ${dayData?.allApproved && inMonth ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}
+                          ${today && !dayData?.allApproved ? "bg-accent/30" : ""}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-sm font-medium ${
+                              !inMonth ? "text-muted-foreground/40" : ""
+                            } ${today && !dayData?.allApproved ? "flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground" : ""}`}
+                          >
+                            {format(day, "d")}
+                          </span>
+                          {dayData?.allApproved && inMonth && (
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓</span>
                           )}
                         </div>
-                      }
-                    />
-                    <TooltipContent side="top" align="center">
-                      <p className="text-xs font-medium">{format(day, "EEEE, MMM d")}</p>
-                      {dayData ? (
-                        <div className="text-[11px] text-muted-foreground space-y-0.5">
-                          <p>{dayData.records.length} record{dayData.records.length === 1 ? "" : "s"}</p>
-                          <p>{dayData.approvedCount} approved, {dayData.pendingCount} pending</p>
+                        {inMonth && dayData && dayData.records.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {dayData.approvedCount > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="inline-block size-2 rounded-full bg-emerald-500" />
+                                <span className="text-xs tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
+                                  {dayData.approvedCount}
+                                </span>
+                              </div>
+                            )}
+                            {dayData.pendingCount > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="inline-block size-2 rounded-full bg-orange-500" />
+                                <span className="text-xs tabular-nums text-orange-600 dark:text-orange-400 font-medium">
+                                  {dayData.pendingCount}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
+                  <HoverCardContent side="top" align="center" className="w-56">
+                    <p className="text-xs font-medium mb-2">{format(day, "EEEE, MMM d")}</p>
+                    {dayData ? (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block size-3 rounded-full bg-emerald-500" />
+                          <span className="text-xs font-medium">{dayData.approvedCount} Approved</span>
                         </div>
-                      ) : inMonth ? (
-                        <p className="text-[11px] text-muted-foreground">No records</p>
-                      ) : null}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-block size-3 rounded-full bg-orange-500" />
+                          <span className="text-xs font-medium">{dayData.pendingCount} Pending</span>
+                        </div>
+                        <div className="pt-1 text-[11px] text-muted-foreground">
+                          {dayData.records.length} total record{dayData.records.length === 1 ? "" : "s"}
+                        </div>
+                      </div>
+                    ) : inMonth ? (
+                      <p className="text-xs text-muted-foreground">No records</p>
+                    ) : null}
+                  </HoverCardContent>
+                </HoverCard>
               );
             })}
           </div>

@@ -96,13 +96,16 @@ function AttendancePageInner() {
   const pendingRecords = data?.filter((a) => a.approvalStatus === "pending") ?? [];
   const selectedPendingIds = [...selectedIds].filter((id) => pendingRecords.some((r) => r.id === id));
 
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedIds(new Set(pendingRecords.map((r) => r.id)));
-    } else {
-      setSelectedIds(new Set());
-    }
-  }, [pendingRecords]);
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        setSelectedIds(new Set(pendingRecords.map((r) => r.id)));
+      } else {
+        setSelectedIds(new Set());
+      }
+    },
+    [pendingRecords],
+  );
 
   const handleSelectOne = useCallback((id: string, checked: boolean) => {
     setSelectedIds((prev) => {
@@ -128,27 +131,13 @@ function AttendancePageInner() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Daily Attendance</h1>
-          <p className="text-sm text-muted-foreground">View and manage attendance records by date</p>
-        </div>
         <div className="flex items-end gap-2">
           <AttendanceManualDialog date={date} />
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/attendance/logs" />}
-          >
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/attendance/logs" />}>
             <ListOrdered className="mr-1 size-4" />
             View Logs
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/attendance/calendar" />}
-          >
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/attendance/calendar" />}>
             <CalendarDays className="mr-1 size-4" />
             Calendar
           </Button>
@@ -244,11 +233,7 @@ function AttendancePageInner() {
               <CheckCircle2 className="mr-1 size-4" />
               Approve Selected ({selectedIds.size})
             </Button>
-            <Button
-              size="sm"
-              disabled={pendingRecords.length === 0}
-              onClick={() => setShowApproveDialog(true)}
-            >
+            <Button size="sm" disabled={pendingRecords.length === 0} onClick={() => setShowApproveDialog(true)}>
               <CheckCircle2 className="mr-1 size-4" />
               Approve All Pending
             </Button>
@@ -353,7 +338,8 @@ function AttendancePageInner() {
                       <TableCell>
                         <Badge className={approvalColors[a.approvalStatus] ?? ""} variant="outline">
                           {isApproved && <CheckCircle2 className="mr-1 inline size-3" />}
-                          {ApprovalStatusLabel[a.approvalStatus as keyof typeof ApprovalStatusLabel] ?? a.approvalStatus}
+                          {ApprovalStatusLabel[a.approvalStatus as keyof typeof ApprovalStatusLabel] ??
+                            a.approvalStatus}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -430,10 +416,16 @@ function AttendancePageInner() {
         date={date}
         count={selectedIds.size > 0 ? selectedPendingIds.length : pendingRecords.length}
         allPending={selectedIds.size === 0}
-        employeeIds={selectedIds.size > 0 ? [...selectedPendingIds].map((id) => {
-          const r = data?.find((a) => a.id === id);
-          return r?.employeeId ?? "";
-        }).filter(Boolean) : undefined}
+        employeeIds={
+          selectedIds.size > 0
+            ? [...selectedPendingIds]
+                .map((id) => {
+                  const r = data?.find((a) => a.id === id);
+                  return r?.employeeId ?? "";
+                })
+                .filter(Boolean)
+            : undefined
+        }
         open={showApproveDialog}
         onOpenChange={setShowApproveDialog}
         onSuccess={() => setSelectedIds(new Set())}
