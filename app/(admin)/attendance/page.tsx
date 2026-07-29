@@ -20,13 +20,11 @@ import { formatMinutes } from "@/server/services/attendance-calculator";
 import { AttendanceStatusLabel } from "@/server/domain/attendance";
 import { AttendanceEditDialog } from "@/components/attendance/attendance-edit-dialog";
 import { AttendanceManualDialog } from "@/components/attendance/attendance-manual-dialog";
+import { todayKey } from "@/lib/utils";
 import Link from "next/link";
 import { ListOrdered, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+
 
 const statusColors: Record<string, string> = {
   Present: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",

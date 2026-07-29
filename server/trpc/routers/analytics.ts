@@ -76,7 +76,7 @@ export const attendanceRouter = router({
 
         return adminUpdateAttendance(input.id, mapped)
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 
@@ -113,7 +113,7 @@ export const attendanceRouter = router({
 
         return adminManualCreateAttendance(input.employeeId, input.date, mapped)
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 
@@ -127,7 +127,7 @@ export const attendanceRouter = router({
         }
         return attendanceRepository.delete(input.id)
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 

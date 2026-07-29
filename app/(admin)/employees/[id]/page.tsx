@@ -16,8 +16,8 @@ export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const { data: employees, isLoading } = trpc.employee.list.useQuery();
-  const employee = employees?.find((e) => e.id === id);
+  const { data: _employee, isLoading } = trpc.employee.getById.useQuery({ id });
+  const employee = _employee ?? undefined;
 
   if (editing) {
     return (

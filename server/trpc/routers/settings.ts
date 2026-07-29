@@ -29,6 +29,12 @@ export const settingsRouter = router({
     kioskConfigRepository.list(),
   ),
 
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(({ input }) =>
+      kioskConfigRepository.getById(input.id),
+    ),
+
   active: protectedProcedure.query(() =>
     kioskConfigRepository.getActive(),
   ),

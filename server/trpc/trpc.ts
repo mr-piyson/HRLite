@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server"
 import superjson from "superjson"
 import { ZodError } from "zod"
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library"
 import { DomainError } from "@/server/domain/attendance"
 import { auth } from "@/lib/auth"
 
@@ -83,6 +84,14 @@ export function mapDomainError(err: unknown): never {
       FORBIDDEN: "FORBIDDEN",
     } as const
     throw new TRPCError({ code: map[err.code], message: err.message, cause: err })
+  }
+  if (err instanceof PrismaClientKnownRequestError && err.code === "P2002") {
+    const target = (err.meta?.target as string[])?.join(", ") ?? "field"
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `A record with this ${target} already exists`,
+      cause: err,
+    })
   }
   throw err
 }

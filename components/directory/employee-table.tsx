@@ -68,7 +68,7 @@ export function EmployeeTable() {
                   </TableRow>
                 ))
               : employees?.map((emp) => (
-                  <TableRow key={emp.id} className="cursor-pointer" onClick={() => router.push(`/employees/${emp.id}`)}>
+                  <TableRow key={emp.id} className="cursor-pointer" onClick={() => router.push(`/employees/${emp.id}`)} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/employees/${emp.id}`) }}>
                     <TableCell className="font-mono text-xs">{emp.empCode}</TableCell>
                     <TableCell className="font-medium">{emp.fullName}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{emp.designation ?? "—"}</TableCell>
@@ -85,12 +85,13 @@ export function EmployeeTable() {
                     <TableCell className="text-center">
                       <Switch
                         checked={emp.isActive}
-                        onCheckedChange={() =>
+                        onCheckedChange={() => {
+                          if (emp.isActive && !window.confirm("Deactivate this employee? They will not be able to clock in.")) return
                           toggleActive.mutate({
                             id: emp.id,
                             isActive: !emp.isActive,
                           })
-                        }
+                        }}
                       />
                     </TableCell>
                     <TableCell>

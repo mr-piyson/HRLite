@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import { trpc } from "@/lib/trpc/client"
+import { todayKey } from "@/lib/utils"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { RecentActivity } from "@/components/dashboard/recent-activity"
 import { SupplierBreakdown } from "@/components/dashboard/supplier-breakdown"
@@ -13,11 +14,6 @@ import {
   LogIn,
   LogOut,
 } from "lucide-react"
-
-function todayKey() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-}
 
 export default function DashboardPage() {
   const dateKey = useMemo(() => todayKey(), [])

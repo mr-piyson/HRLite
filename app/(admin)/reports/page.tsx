@@ -24,16 +24,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatMinutes } from "@/server/services/attendance-calculator"
 import { downloadCSV } from "@/lib/csv"
+import { todayKey } from "@/lib/utils"
 import { Download, FileSpreadsheet } from "lucide-react"
 
 function firstOfMonth() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`
-}
-
-function todayKey() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
 function labelForRange(from: string, to: string) {

@@ -14,8 +14,8 @@ import { ArrowLeft, Edit2 } from "lucide-react";
 export default function SupplierDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [editing, setEditing] = useState(false);
-  const { data: suppliers, isLoading } = trpc.supplier.list.useQuery();
-  const supplier = suppliers?.find((s) => s.id === id);
+  const { data: _supplier, isLoading } = trpc.supplier.getById.useQuery({ id });
+  const supplier = _supplier ?? undefined;
 
   if (editing) {
     return (

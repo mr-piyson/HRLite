@@ -64,7 +64,7 @@ export function SupplierTable() {
                   </TableRow>
                 ))
               : suppliers?.map((s) => (
-                  <TableRow key={s.id} className="cursor-pointer" onClick={() => router.push(`/suppliers/${s.id}`)}>
+                  <TableRow key={s.id} className="cursor-pointer" onClick={() => router.push(`/suppliers/${s.id}`)} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/suppliers/${s.id}`) }}>
                     <TableCell className="font-mono text-xs">{s.supplierCode}</TableCell>
                     <TableCell className="font-medium">{s.supplierName}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{s.contactPerson ?? "—"}</TableCell>
@@ -73,7 +73,10 @@ export function SupplierTable() {
                     <TableCell className="text-center">
                       <Switch
                         checked={s.isActive}
-                        onCheckedChange={() => toggleActive.mutate({ id: s.id, isActive: !s.isActive })}
+                        onCheckedChange={() => {
+                          if (s.isActive && !window.confirm("Deactivate this supplier?")) return
+                          toggleActive.mutate({ id: s.id, isActive: !s.isActive })
+                        }}
                       />
                     </TableCell>
                     <TableCell>

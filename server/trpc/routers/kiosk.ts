@@ -103,7 +103,7 @@ export const kioskRouter = router({
           },
         })
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 
@@ -114,15 +114,15 @@ export const kioskRouter = router({
       try {
         return await getActiveEmployeesWithStatus()
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 
   verifyAdminPin: publicProcedure
     .input(z.object({ pin: z.string().min(1), kioskToken: z.string().min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await assertKioskToken(input.kioskToken)
-      const valid = await verifyAdminPin(input.pin)
+      const valid = await verifyAdminPin(input.pin, ctx.ipAddress)
       return { valid }
     }),
 
@@ -133,7 +133,7 @@ export const kioskRouter = router({
       try {
         return await adminPunch(input.employeeId)
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 })

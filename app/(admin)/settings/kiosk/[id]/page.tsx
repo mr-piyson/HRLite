@@ -9,9 +9,7 @@ import { Button } from "@/components/ui/button";
 
 export default function KioskConfigDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: configs } = trpc.settings.list.useQuery();
-  const config = configs?.find((c) => c.id === id);
-  const isLoading = !configs;
+  const { data: config, isLoading } = trpc.settings.getById.useQuery({ id });
 
   return (
     <div className="space-y-6">

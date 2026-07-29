@@ -48,58 +48,8 @@ export async function punch(input: PunchInput): Promise<PunchResult> {
   if (!employee) {
     throw new DomainError("Employee not recognized", "NOT_FOUND")
   }
-  if (!employee.isActive) {
-    throw new DomainError("Employee is inactive", "FORBIDDEN")
-  }
 
-  const now = new Date()
-  const dateKey = toDateKey(now)
-
-  const open = await hasOpenSession(employee.id, dateKey)
-  const logType = open ? LogType.OUT : LogType.IN
-
-  const since = new Date(now.getTime() - DUPLICATE_WINDOW_SECONDS * 1000)
-
-  await prisma.$transaction(async () => {
-    const lastLog = await attendanceLogRepository.findLastSince(
-      employee.id,
-      since,
-    )
-    if (lastLog && lastLog.logType === logType) {
-      throw new DomainError(
-        "Duplicate scan detected. Please wait a moment.",
-        "CONFLICT",
-      )
-    }
-
-    await attendanceLogRepository.create({
-      employeeId: employee.id,
-      logTime: now,
-      logType,
-      deviceId: input.context?.deviceId,
-      deviceName: input.context?.deviceName,
-      ipAddress: input.context?.ipAddress,
-      kioskId: input.context?.kioskId,
-    })
-  })
-
-  const attendance = await regenerateAttendance(
-    employee.id,
-    dateKey,
-  )
-
-  return {
-    employee: {
-      id: employee.id,
-      fullName: employee.fullName,
-      empCode: employee.empCode,
-      photo: employee.photo,
-    },
-    action: logType === LogType.IN ? "IN" : "OUT",
-    time: now,
-    workingMinutes: attendance.workingMinutes,
-    status: attendance.status,
-  }
+  return createPunch(employee, input.context)
 }
 
 export async function lookupEmployee(empCode: string) {
@@ -115,10 +65,39 @@ export async function lookupEmployee(empCode: string) {
   }
 }
 
-export async function verifyAdminPin(pin: string): Promise<boolean> {
+const pinAttempts = new Map<string, { count: number; resetAt: number }>()
+const PIN_RATE_LIMIT = 5
+const PIN_RATE_WINDOW_MS = 30_000
+
+export async function verifyAdminPin(pin: string, ip?: string): Promise<boolean> {
+  const key = ip ?? "global"
+  const now = Date.now()
+
+  const entry = pinAttempts.get(key)
+  if (entry && now < entry.resetAt && entry.count >= PIN_RATE_LIMIT) {
+    throw new DomainError(
+      "Too many PIN attempts. Please wait 30 seconds.",
+      "FORBIDDEN",
+    )
+  }
+  if (!entry || now >= entry.resetAt) {
+    pinAttempts.set(key, { count: 0, resetAt: now + PIN_RATE_WINDOW_MS })
+  }
+
   const config = await kioskConfigRepository.getActive()
   if (!config?.adminPin) return false
-  return config.adminPin === pin
+
+  const valid = config.adminPin === pin
+
+  if (!valid) {
+    const current = pinAttempts.get(key)!
+    current.count += 1
+    pinAttempts.set(key, current)
+  } else {
+    pinAttempts.delete(key)
+  }
+
+  return valid
 }
 
 export interface EmployeeWithStatus {
@@ -210,6 +189,14 @@ export async function adminPunch(employeeId: string): Promise<PunchResult> {
   if (!employee) {
     throw new DomainError("Employee not found", "NOT_FOUND")
   }
+
+  return createPunch(employee)
+}
+
+async function createPunch(
+  employee: { id: string; fullName: string; empCode: string; photo: string | null; isActive: boolean },
+  context?: KioskContext,
+): Promise<PunchResult> {
   if (!employee.isActive) {
     throw new DomainError("Employee is inactive", "FORBIDDEN")
   }
@@ -238,6 +225,10 @@ export async function adminPunch(employeeId: string): Promise<PunchResult> {
       employeeId: employee.id,
       logTime: now,
       logType,
+      deviceId: context?.deviceId,
+      deviceName: context?.deviceName,
+      ipAddress: context?.ipAddress,
+      kioskId: context?.kioskId,
     })
   })
 

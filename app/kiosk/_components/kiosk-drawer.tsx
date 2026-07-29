@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { trpc } from "@/lib/trpc/client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -22,8 +22,8 @@ export function KioskDrawer({ open, onOpenChange, kioskToken }: KioskDrawerProps
 
   const punchMutation = trpc.kiosk.adminPunch.useMutation({
     onSuccess: (result) => {
-      const name = (result as any)?.employee?.fullName ?? "Employee"
-      const action = (result as any)?.action ?? "IN"
+      const name = result.employee?.fullName ?? "Employee"
+      const action = result.action ?? "IN"
       toast.success(`${name} clocked ${action}`)
       refetch()
     },
@@ -39,13 +39,16 @@ export function KioskDrawer({ open, onOpenChange, kioskToken }: KioskDrawerProps
     [punchMutation, kioskToken],
   )
 
-  const filtered = search.trim()
-    ? employees.filter(
-        (e) =>
-          e.fullName.toLowerCase().includes(search.toLowerCase()) ||
-          e.empCode.toLowerCase().includes(search.toLowerCase()),
-      )
-    : employees
+  const filtered = useMemo(
+    () => search.trim()
+      ? employees.filter(
+          (e) =>
+            e.fullName.toLowerCase().includes(search.toLowerCase()) ||
+            e.empCode.toLowerCase().includes(search.toLowerCase()),
+        )
+      : employees,
+    [search, employees],
+  )
 
   return (
     <>

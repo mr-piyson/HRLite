@@ -4,6 +4,7 @@ import {
   employeeRepository,
   supplierRepository,
 } from "@/server/repositories"
+import { DomainError } from "@/server/domain/attendance"
 
 export const supplierRouter = router({
   list: protectedProcedure.query(() => supplierRepository.list()),
@@ -25,9 +26,13 @@ export const supplierRouter = router({
         address: z.string().optional(),
       }),
     )
-    .mutation(({ input }) =>
-      supplierRepository.create(input),
-    ),
+    .mutation(async ({ input }) => {
+      try {
+        return await supplierRepository.create(input)
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
 
   update: protectedProcedure
     .input(
@@ -48,12 +53,11 @@ export const supplierRouter = router({
       try {
         const existing = await supplierRepository.getById(input.id)
         if (!existing) {
-          const { DomainError } = await import("@/server/domain/attendance")
           throw new DomainError("Supplier not found", "NOT_FOUND")
         }
-        return supplierRepository.update(input.id, input.data)
+        return await supplierRepository.update(input.id, input.data)
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 
@@ -90,12 +94,16 @@ export const employeeRouter = router({
         pin: z.string().optional(),
       }),
     )
-    .mutation(({ input }) =>
-      employeeRepository.create({
-        ...input,
-        supplierId: input.supplierId ?? null,
-      }),
-    ),
+    .mutation(async ({ input }) => {
+      try {
+        return await employeeRepository.create({
+          ...input,
+          supplierId: input.supplierId ?? null,
+        })
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
 
   update: protectedProcedure
     .input(
@@ -122,15 +130,14 @@ export const employeeRouter = router({
       try {
         const existing = await employeeRepository.getById(input.id)
         if (!existing) {
-          const { DomainError } = await import("@/server/domain/attendance")
           throw new DomainError("Employee not found", "NOT_FOUND")
         }
-        return employeeRepository.update(input.id, {
+        return await employeeRepository.update(input.id, {
           ...input.data,
           supplierId: input.data.supplierId ?? null,
         })
       } catch (err) {
-        return mapDomainError(err)
+        mapDomainError(err)
       }
     }),
 

@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toDatetimeLocal } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -44,17 +45,6 @@ interface AttendanceEditDialogProps {
   }
   open: boolean
   onOpenChange: (open: boolean) => void
-}
-
-function toDatetimeLocal(date: Date | null): string {
-  if (!date) return ""
-  const d = new Date(date)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  const h = String(d.getHours()).padStart(2, "0")
-  const min = String(d.getMinutes()).padStart(2, "0")
-  return `${y}-${m}-${day}T${h}:${min}`
 }
 
 export function AttendanceEditDialog({
