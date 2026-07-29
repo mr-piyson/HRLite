@@ -31,6 +31,12 @@ export const employeeRepository = {
       orderBy: { fullName: "asc" },
     })
   },
+  listActive() {
+    return prisma.employee.findMany({
+      where: { isActive: true },
+      orderBy: { fullName: "asc" },
+    })
+  },
   getById(id: string) {
     return prisma.employee.findUnique({
       where: { id },
@@ -176,6 +182,17 @@ export const kioskConfigRepository = {
   },
   getBySlug(slug: string) {
     return prisma.kioskConfig.findUnique({ where: { slug } })
+  },
+  getByToken(token: string) {
+    return prisma.kioskConfig.findFirst({
+      where: { accessToken: token, isActive: true },
+    })
+  },
+  updateToken(id: string, token: string) {
+    return prisma.kioskConfig.update({
+      where: { id },
+      data: { accessToken: token },
+    })
   },
   create(data: Prisma.KioskConfigUncheckedCreateInput) {
     return prisma.kioskConfig.create({ data })

@@ -108,6 +108,8 @@ model KioskConfig {
   qrCodeEnabled          Boolean  @default(true)
   rfidEnabled            Boolean  @default(false)
   pinEnabled             Boolean  @default(false)
+  adminPin               String?
+  accessToken            String?
   faceRecognitionEnabled Boolean  @default(false)
   fingerprintEnabled     Boolean  @default(false)
   workdayStart           String   @default("09:00")

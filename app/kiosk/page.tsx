@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc/client";
-import { ArrowUp, Maximize2, Sparkles, Clock, CheckCircle2, User } from "lucide-react";
+import { ArrowUp, Maximize2, Sparkles, Clock, CheckCircle2, User, Shield } from "lucide-react";
+import { AdminPinDialog } from "./_components/admin-pin-dialog";
+import { KioskDrawer } from "./_components/kiosk-drawer";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-client";
@@ -22,6 +24,8 @@ export default function KioskPage() {
   const router = useRouter();
 
   const [state, setState] = useState<KioskState>("idle");
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [code, setCode] = useState("");
   const [employee, setEmployee] = useState<EmployeeInfo | null>(null);
   const [action, setAction] = useState<"IN" | "OUT">("IN");
@@ -145,13 +149,23 @@ export default function KioskPage() {
           </span>
         </div>
 
-        <button
-          onClick={() => document.documentElement.requestFullscreen()}
-          className="p-2 rounded-xl hover:bg-[#1e1f20] text-zinc-400 hover:text-zinc-200 transition-all"
-          title="Fullscreen Mode"
-        >
-          <Maximize2 className="size-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setAdminDialogOpen(true)}
+            className="p-2 rounded-xl hover:bg-[#1e1f20] text-zinc-500 hover:text-[#74abfe] transition-all"
+            title="Admin Panel"
+          >
+            <Shield className="size-4" />
+          </button>
+
+          <button
+            onClick={() => document.documentElement.requestFullscreen()}
+            className="p-2 rounded-xl hover:bg-[#1e1f20] text-zinc-400 hover:text-zinc-200 transition-all"
+            title="Fullscreen Mode"
+          >
+            <Maximize2 className="size-4" />
+          </button>
+        </div>
       </header>
 
       {/* Main Display Area */}
@@ -262,6 +276,17 @@ export default function KioskPage() {
       <footer className="py-4 text-center text-xs text-zinc-600 border-t border-zinc-950 bg-[#131314]">
         Press Enter to submit • Press Esc to clear entry
       </footer>
+
+      <AdminPinDialog
+        open={adminDialogOpen}
+        onOpenChange={setAdminDialogOpen}
+        onVerified={() => setDrawerOpen(true)}
+      />
+
+      <KioskDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+      />
 
       {/* Embedded Animations */}
       <style jsx global>{`

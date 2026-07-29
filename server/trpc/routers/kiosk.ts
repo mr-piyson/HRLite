@@ -1,6 +1,12 @@
 import { z } from "zod"
 import { router, publicProcedure, mapDomainError } from "@/server/trpc/trpc"
-import { punch, lookupEmployee } from "@/server/services/kiosk.service"
+import {
+  punch,
+  lookupEmployee,
+  verifyAdminPin,
+  getActiveEmployeesWithStatus,
+  adminPunch,
+} from "@/server/services/kiosk.service"
 import { kioskConfigRepository } from "@/server/repositories"
 import { IdentificationMethod } from "@/server/domain/attendance"
 
@@ -51,6 +57,31 @@ export const kioskRouter = router({
             kioskId: input.kioskId,
           },
         })
+      } catch (err) {
+        return mapDomainError(err)
+      }
+    }),
+
+  getActiveEmployees: publicProcedure.query(async () => {
+    try {
+      return await getActiveEmployeesWithStatus()
+    } catch (err) {
+      return mapDomainError(err)
+    }
+  }),
+
+  verifyAdminPin: publicProcedure
+    .input(z.object({ pin: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const valid = await verifyAdminPin(input.pin)
+      return { valid }
+    }),
+
+  adminPunch: publicProcedure
+    .input(z.object({ employeeId: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      try {
+        return await adminPunch(input.employeeId)
       } catch (err) {
         return mapDomainError(err)
       }

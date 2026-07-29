@@ -1,6 +1,8 @@
 import {
   attendanceLogRepository,
+  attendanceRepository,
   employeeRepository,
+  kioskConfigRepository,
 } from "@/server/repositories"
 import {
   DomainError,
@@ -106,5 +108,101 @@ export async function lookupEmployee(empCode: string) {
     designation: employee.designation,
     photo: employee.photo,
     supplierName: employee.supplier?.supplierName ?? "Direct Employee",
+  }
+}
+
+export async function verifyAdminPin(pin: string): Promise<boolean> {
+  const config = await kioskConfigRepository.getActive()
+  if (!config?.adminPin) return false
+  return config.adminPin === pin
+}
+
+export interface EmployeeWithStatus {
+  id: string
+  fullName: string
+  empCode: string
+  designation: string | null
+  photo: string | null
+  attended: boolean
+  isClockedIn: boolean
+}
+
+export async function getActiveEmployeesWithStatus(): Promise<EmployeeWithStatus[]> {
+  const [employees, config] = await Promise.all([
+    employeeRepository.listActive(),
+    kioskConfigRepository.getActive(),
+  ])
+
+  const now = new Date()
+  const dateKey = toDateKey(now)
+
+  const results = await Promise.all(
+    employees.map(async (emp) => {
+      const [daily, open] = await Promise.all([
+        attendanceRepository.getDaily(emp.id, dateKey),
+        hasOpenSession(emp.id, dateKey),
+      ])
+      return {
+        id: emp.id,
+        fullName: emp.fullName,
+        empCode: emp.empCode,
+        designation: emp.designation,
+        photo: emp.photo,
+        attended: daily !== null,
+        isClockedIn: open,
+      }
+    }),
+  )
+
+  return results
+}
+
+export async function adminPunch(employeeId: string): Promise<PunchResult> {
+  const employee = await employeeRepository.getById(employeeId)
+
+  if (!employee) {
+    throw new DomainError("Employee not found", "NOT_FOUND")
+  }
+  if (!employee.isActive) {
+    throw new DomainError("Employee is inactive", "FORBIDDEN")
+  }
+
+  const now = new Date()
+  const dateKey = toDateKey(now)
+
+  const open = await hasOpenSession(employee.id, dateKey)
+  const logType = open ? LogType.OUT : LogType.IN
+
+  const since = new Date(now.getTime() - DUPLICATE_WINDOW_SECONDS * 1000)
+  const lastLog = await attendanceLogRepository.findLastSince(
+    employee.id,
+    since,
+  )
+  if (lastLog && lastLog.logType === logType) {
+    throw new DomainError(
+      "Duplicate scan detected. Please wait a moment.",
+      "CONFLICT",
+    )
+  }
+
+  await attendanceLogRepository.create({
+    employeeId: employee.id,
+    logTime: now,
+    logType,
+  })
+
+  const attendance = await regenerateAttendance(employee.id, dateKey)
+
+  return {
+    employee: {
+      id: employee.id,
+      fullName: employee.fullName,
+      empCode: employee.empCode,
+      photo: employee.photo,
+    },
+    action: logType === LogType.IN ? "IN" : "OUT",
+    time: now,
+    workingMinutes: attendance.workingMinutes,
+    status: attendance.status,
   }
 }
