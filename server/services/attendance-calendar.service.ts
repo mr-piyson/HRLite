@@ -26,6 +26,8 @@ export interface CalendarDay {
     Incomplete: number
   }
   allApproved: boolean
+  approvedCount: number
+  pendingCount: number
 }
 
 export async function getCalendarData(year: number, month: number): Promise<CalendarDay[]> {
@@ -64,7 +66,9 @@ export async function getCalendarData(year: number, month: number): Promise<Cale
       }
     }
     const allApproved = dayRecords.length > 0 && dayRecords.every((r) => r.approvalStatus === "approved")
+    const approvedCount = dayRecords.filter((r) => r.approvalStatus === "approved").length
+    const pendingCount = dayRecords.filter((r) => r.approvalStatus === "pending").length
 
-    return { date: dateKey, records: dayRecords, summary, allApproved }
+    return { date: dateKey, records: dayRecords, summary, allApproved, approvedCount, pendingCount }
   })
 }

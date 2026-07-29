@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AttendanceStatusLabel } from "@/server/domain/attendance";
 import type { CalendarDay } from "@/server/services/attendance-calendar.service";
-import { AttendanceCalendarDrawer } from "@/components/attendance/attendance-calendar-drawer";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   startOfMonth,
   endOfMonth,
@@ -17,27 +22,28 @@ import {
   endOfWeek,
   eachDayOfInterval,
   format,
-  addMonths,
+  setMonth,
+  setYear,
   isSameMonth,
-  isSameDay,
   isToday,
 } from "date-fns";
 
-const statusDotColors: Record<string, string> = {
-  Present: "bg-emerald-500",
-  Absent: "bg-red-500",
-  Late: "bg-amber-500",
-  HalfDay: "bg-orange-500",
-  Incomplete: "bg-blue-500",
-};
-
-const statusDotOrder = ["Present", "Absent", "Late", "HalfDay", "Incomplete"] as const;
-
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+
 export default function AttendanceCalendarPage() {
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<{ date: string; dayName: string } | null>(null);
+
+  const selectedMonth = currentDate.getMonth();
+  const selectedYear = currentDate.getFullYear();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -58,43 +64,54 @@ export default function AttendanceCalendarPage() {
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const allDays = eachDayOfInterval({ start: calStart, end: calEnd });
 
-  const prevMonth = () => setCurrentDate((d) => addMonths(d, -1));
-  const nextMonth = () => setCurrentDate((d) => addMonths(d, 1));
+  const handleMonthChange = (value: string | null) => {
+    if (value) setCurrentDate((d) => setMonth(d, parseInt(value)));
+  };
+
+  const handleYearChange = (value: string | null) => {
+    if (value) setCurrentDate((d) => setYear(d, parseInt(value)));
+  };
+
   const goToday = () => setCurrentDate(new Date());
 
   const handleDayClick = (day: Date) => {
     const dateKey = format(day, "yyyy-MM-dd");
-    setSelectedDay({ date: dateKey, dayName: format(day, "EEEE, MMMM d, yyyy") });
+    router.push(`/attendance?date=${dateKey}`);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Attendance Calendar</h1>
-          <p className="text-sm text-muted-foreground">Month overview of employee attendance</p>
-        </div>
+    <div className="h-full space-y-4">
+      {/* Month/Year Selects Bar */}
+      <div className="flex items-center gap-3">
+        <Select value={String(selectedMonth)} onValueChange={handleMonthChange}>
+          <SelectTrigger className="w-40">
+            <SelectValue>{MONTHS[selectedMonth]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {MONTHS.map((name, i) => (
+              <SelectItem key={i} value={String(i)}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={String(selectedYear)} onValueChange={handleYearChange}>
+          <SelectTrigger className="w-24">
+            <SelectValue>{selectedYear}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {YEAR_OPTIONS.map((y) => (
+              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button variant="outline" size="sm" onClick={goToday}>
+          Today
+        </Button>
       </div>
 
+      {/* Calendar */}
       <Card className="overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={prevMonth}>
-              <ChevronLeft className="size-5" />
-            </Button>
-            <h2 className="text-lg font-semibold min-w-40 text-center">
-              {format(currentDate, "MMMM yyyy")}
-            </h2>
-            <Button variant="ghost" size="icon" onClick={nextMonth}>
-              <ChevronRight className="size-5" />
-            </Button>
-          </div>
-          <Button variant="outline" size="sm" onClick={goToday}>
-            Today
-          </Button>
-        </div>
-
         {/* Day names */}
         <div className="grid grid-cols-7 border-b">
           {DAYS.map((d) => (
@@ -130,34 +147,39 @@ export default function AttendanceCalendarPage() {
                           onClick={() => inMonth && handleDayClick(day)}
                           className={`relative min-h-[90px] border-b border-r p-2 last:border-r-0 transition-colors ${
                             inMonth ? "cursor-pointer hover:bg-muted/50" : "bg-muted/20 cursor-default"
-                          } ${today ? "bg-accent/30" : ""}`}
+                          } ${dayData?.allApproved && inMonth ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}
+                            ${today && !dayData?.allApproved ? "bg-accent/30" : ""}`}
                         >
                           <div className="flex items-center justify-between">
                             <span
                               className={`text-sm font-medium ${
                                 !inMonth ? "text-muted-foreground/40" : ""
-                              } ${today ? "flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground" : ""}`}
+                              } ${today && !dayData?.allApproved ? "flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground" : ""}`}
                             >
                               {format(day, "d")}
                             </span>
                             {dayData?.allApproved && inMonth && (
-                              <span className="text-[10px] text-emerald-500 font-medium">✓</span>
+                              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓</span>
                             )}
                           </div>
                           {inMonth && dayData && dayData.records.length > 0 && (
-                            <div className="mt-1.5 space-y-0.5">
-                              {statusDotOrder.map((s) => {
-                                const count = dayData.summary[s];
-                                if (!count) return null;
-                                return (
-                                  <div key={s} className="flex items-center gap-1">
-                                    <span className={`inline-block size-2 rounded-full ${statusDotColors[s] ?? "bg-gray-400"}`} />
-                                    <span className="text-[10px] tabular-nums text-muted-foreground">
-                                      {count}
-                                    </span>
-                                  </div>
-                                );
-                              })}
+                            <div className="mt-2 space-y-1">
+                              {dayData.approvedCount > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span className="inline-block size-2 rounded-full bg-emerald-500" />
+                                  <span className="text-xs tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
+                                    {dayData.approvedCount}
+                                  </span>
+                                </div>
+                              )}
+                              {dayData.pendingCount > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <span className="inline-block size-2 rounded-full bg-orange-500" />
+                                  <span className="text-xs tabular-nums text-orange-600 dark:text-orange-400 font-medium">
+                                    {dayData.pendingCount}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -166,10 +188,10 @@ export default function AttendanceCalendarPage() {
                     <TooltipContent side="top" align="center">
                       <p className="text-xs font-medium">{format(day, "EEEE, MMM d")}</p>
                       {dayData ? (
-                        <p className="text-[11px] text-muted-foreground">
-                          {dayData.records.length} record{dayData.records.length === 1 ? "" : "s"}
-                          {dayData.allApproved ? " — all approved" : ""}
-                        </p>
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <p>{dayData.records.length} record{dayData.records.length === 1 ? "" : "s"}</p>
+                          <p>{dayData.approvedCount} approved, {dayData.pendingCount} pending</p>
+                        </div>
                       ) : inMonth ? (
                         <p className="text-[11px] text-muted-foreground">No records</p>
                       ) : null}
@@ -181,13 +203,6 @@ export default function AttendanceCalendarPage() {
           </div>
         )}
       </Card>
-
-      <AttendanceCalendarDrawer
-        date={selectedDay?.date ?? null}
-        dayName={selectedDay?.dayName ?? null}
-        open={!!selectedDay}
-        onOpenChange={(open) => { if (!open) setSelectedDay(null); }}
-      />
     </div>
   );
 }

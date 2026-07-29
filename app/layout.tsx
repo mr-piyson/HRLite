@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { TRPCProvider } from "@/lib/trpc/provider"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -39,7 +40,9 @@ export default function RootLayout({
       <body className="antialiased">
         <TRPCProvider>
           <ThemeProvider>
-            {children}
+            <NuqsAdapter>
+              {children}
+            </NuqsAdapter>
             <Toaster richColors closeButton />
           </ThemeProvider>
         </TRPCProvider>

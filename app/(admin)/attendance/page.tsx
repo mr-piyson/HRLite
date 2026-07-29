@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, Suspense } from "react";
+import { useQueryState } from "nuqs";
 import { trpc } from "@/lib/trpc/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -24,7 +23,7 @@ import { AttendanceManualDialog } from "@/components/attendance/attendance-manua
 import { AttendanceApproveDialog } from "@/components/attendance/attendance-approve-dialog";
 import { todayKey } from "@/lib/utils";
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, ListOrdered, Lock, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, ListOrdered, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   Present: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -72,8 +71,8 @@ function AdminTooltip({
 
 type Mode = "view" | "revise";
 
-export default function AttendancePage() {
-  const [date, setDate] = useState(todayKey());
+function AttendancePageInner() {
+  const [date, setDate] = useQueryState("date", { defaultValue: todayKey(), clearOnDefault: true });
   const [mode, setMode] = useState<Mode>("view");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showApproveDialog, setShowApproveDialog] = useState(false);
@@ -134,10 +133,6 @@ export default function AttendancePage() {
           <p className="text-sm text-muted-foreground">View and manage attendance records by date</p>
         </div>
         <div className="flex items-end gap-2">
-          <div className="w-48">
-            <Label htmlFor="date">Date</Label>
-            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
           <AttendanceManualDialog date={date} />
           <Button
             variant="outline"
@@ -455,5 +450,13 @@ export default function AttendancePage() {
         />
       )}
     </div>
+  );
+}
+
+export default function AttendancePage() {
+  return (
+    <Suspense fallback={null}>
+      <AttendancePageInner />
+    </Suspense>
   );
 }
