@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useEffect, useState } from "react"
 import { useSession, signOut } from "@/lib/auth-client"
+import { trpc } from "@/lib/trpc/client"
 import { useRouter } from "next/navigation"
 
 export function Topbar() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const { data: session } = useSession()
+  const { data: settings } = trpc.general.get.useQuery()
   const router = useRouter()
   useEffect(() => setMounted(true), [])
 
@@ -25,7 +27,7 @@ export function Topbar() {
     <header className="flex h-14 items-center justify-between border-b bg-background px-6">
       <div className="flex items-center gap-2">
         <h2 className="text-sm font-semibold text-muted-foreground">
-          Enterprise HRMS
+          {settings?.companyName ?? settings?.appName ?? "Enterprise HRMS"}
         </h2>
       </div>
 

@@ -28,6 +28,7 @@ export function EmployeeFormDialog() {
 
   const utils = trpc.useUtils();
   const { data: suppliers } = trpc.supplier.list.useQuery();
+  const { data: settings } = trpc.general.get.useQuery();
 
   const createMutation = trpc.employee.create.useMutation({
     onSuccess: () => {
@@ -51,7 +52,7 @@ export function EmployeeFormDialog() {
     setNationality("");
     setDocumentType(null);
     setDocumentNumber("");
-    setCurrency("SAR");
+    setCurrency(settings?.defaultCurrency ?? "SAR");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,7 +78,7 @@ export function EmployeeFormDialog() {
       open={open}
       onOpenChange={(v) => {
         setOpen(v);
-        if (!v) handleClose();
+        handleClose();
       }}
     >
       <DialogTrigger

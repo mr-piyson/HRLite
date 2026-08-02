@@ -128,6 +128,20 @@ model KioskConfig {
   @@index([accessToken])
 }
 
+model AppSetting {
+  id                  String   @id @default("default")
+  appName             String   @default("Attendance Kiosk")
+  appLogo             String?
+  defaultCurrency     String   @default("SAR")
+  defaultWorkdayStart String   @default("09:00")
+  weekendDays         String[] @default(["Fri", "Sat"])
+  companyName         String?
+  companyAddress      String?
+  companyPhone        String?
+  companyTaxId        String?
+  updatedAt           DateTime @updatedAt
+}
+
 model User {
   id            String    @id
   name          String

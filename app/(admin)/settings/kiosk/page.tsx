@@ -69,6 +69,7 @@ function CreateKioskDialog() {
   const [adminPin, setAdminPin] = useState("");
 
   const utils = trpc.useUtils();
+  const { data: settings } = trpc.general.get.useQuery();
   const createMutation = trpc.settings.create.useMutation({
     onSuccess: (result) => {
       utils.settings.list.invalidate();
@@ -99,7 +100,7 @@ function CreateKioskDialog() {
       pinEnabled: false,
       faceRecognitionEnabled: false,
       fingerprintEnabled: false,
-      workdayStart: "09:00",
+      workdayStart: settings?.defaultWorkdayStart ?? "09:00",
       lateGraceMinutes: 15,
       standardWorkMinutes: 480,
       halfDayMinutes: 240,

@@ -184,6 +184,23 @@ export const attendanceRepository = {
   },
 }
 
+export const appSettingRepository = {
+  get() {
+    return prisma.appSetting.upsert({
+      where: { id: "default" },
+      create: { id: "default" },
+      update: {},
+    })
+  },
+  update(data: Prisma.AppSettingUncheckedUpdateInput) {
+    return prisma.appSetting.upsert({
+      where: { id: "default" },
+      create: { id: "default", ...(data as Prisma.AppSettingUncheckedCreateInput) },
+      update: data,
+    })
+  },
+}
+
 export const kioskConfigRepository = {
   list() {
     return prisma.kioskConfig.findMany({

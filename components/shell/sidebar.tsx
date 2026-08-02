@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "@/lib/auth-client"
+import { trpc } from "@/lib/trpc/client"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
@@ -25,16 +26,23 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const { data: settings } = trpc.general.get.useQuery()
+  const appName = settings?.appName ?? "Attendance Kiosk"
   const isAdmin = session?.user.role === "admin"
   const items = navItems.filter((item) => !item.adminOnly || isAdmin)
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-sidebar">
       <div className="flex h-14 items-center gap-2 border-b px-4">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-          AK
+        <div className="flex size-8 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground text-sm font-bold">
+          {settings?.appLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={settings.appLogo} alt="" className="size-full object-contain" />
+          ) : (
+            appName.slice(0, 2).toUpperCase()
+          )}
         </div>
-        <span className="font-semibold text-sm">Attendance Kiosk</span>
+        <span className="truncate font-semibold text-sm">{appName}</span>
       </div>
 
       <nav className="flex-1 space-y-1 p-3">

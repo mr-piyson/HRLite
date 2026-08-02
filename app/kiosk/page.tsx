@@ -6,6 +6,7 @@ import Link from "next/link"
 
 export default function KioskDirectoryPage() {
   const { data: kiosks, isLoading } = trpc.kiosk.listActive.useQuery()
+  const { data: settings } = trpc.general.get.useQuery()
 
   return (
     <div className="flex h-screen w-full flex-col bg-[#131314] text-[#e3e3e3] font-sans overflow-hidden antialiased select-none">
@@ -13,7 +14,7 @@ export default function KioskDirectoryPage() {
         <div className="flex items-center gap-2.5">
           <Sparkles className="size-5 text-[#74abfe] fill-[#74abfe]/10 animate-pulse" />
           <span className="text-lg font-medium tracking-tight bg-gradient-to-r from-[#74abfe] to-[#c689ff] bg-clip-text text-transparent">
-            BFG - HRLite
+            {settings?.appName ?? "BFG - HRLite"}
           </span>
         </div>
       </header>

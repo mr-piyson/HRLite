@@ -117,6 +117,7 @@ export default function KioskSlugPage() {
     { slug },
     { enabled: authState === "valid" },
   )
+  const { data: settings } = trpc.general.get.useQuery()
 
   const scheduleAutoReset = useCallback(() => {
     if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
@@ -292,7 +293,7 @@ export default function KioskSlugPage() {
           <Sparkles className="size-5 text-[#74abfe] fill-[#74abfe]/10 animate-pulse" />
           <div className="flex items-center gap-2">
             <span className="text-lg font-medium tracking-tight bg-gradient-to-r from-[#74abfe] to-[#c689ff] bg-clip-text text-transparent">
-              {kioskName || "BFG - HRLite"}
+              {kioskName || settings?.appName || "BFG - HRLite"}
             </span>
             <span className="text-[10px] text-zinc-600 bg-zinc-800/50 px-2 py-0.5 rounded-md font-mono">
               {slug}

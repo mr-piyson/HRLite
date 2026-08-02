@@ -3,10 +3,10 @@ import { TRPCProvider } from "@/lib/trpc/provider"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
+import { appSettingRepository } from "@/server/repositories"
 import "./globals.css"
 
-export const metadata: Metadata = {
-  title: "Attendance Kiosk — Enterprise HRMS",
+const STATIC_METADATA: Metadata = {
   description: "Enterprise Attendance Management System",
   icons: {
     icon: [
@@ -22,6 +22,14 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await appSettingRepository.get()
+  return {
+    ...STATIC_METADATA,
+    title: settings.appName,
+  }
 }
 
 export const viewport: Viewport = {

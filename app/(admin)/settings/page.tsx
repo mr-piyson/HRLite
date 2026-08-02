@@ -1,8 +1,14 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Monitor, Users } from "lucide-react"
+import { Monitor, Users, Building2 } from "lucide-react"
 
 const settingGroups = [
+  {
+    title: "General",
+    description: "App branding, company information, and system defaults",
+    href: "/settings/general",
+    icon: Building2,
+  },
   {
     title: "Kiosk Configuration",
     description: "Configure kiosk devices, display settings, identification methods, and attendance policy",

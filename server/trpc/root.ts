@@ -6,6 +6,7 @@ import {
   supplierRouter,
 } from "@/server/trpc/routers/directory"
 import { settingsRouter } from "@/server/trpc/routers/settings"
+import { generalRouter } from "@/server/trpc/routers/general"
 import { userRouter } from "@/server/trpc/routers/users"
 
 export const appRouter = router({
@@ -17,6 +18,7 @@ export const appRouter = router({
   supplier: supplierRouter,
   employee: employeeRouter,
   settings: settingsRouter,
+  general: generalRouter,
   users: userRouter,
 })
 
