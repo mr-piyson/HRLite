@@ -166,7 +166,7 @@ export function KioskDrawer({ open, onOpenChange, kioskToken }: KioskDrawerProps
                           "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
                           emp.isClockedIn
                             ? "bg-emerald-500/10 text-emerald-400"
-                            : "bg-zinc-800 text-zinc-500",
+                            : "bg-orange-500/10 text-orange-400",
                         )}
                       >
                         {emp.isClockedIn ? (
