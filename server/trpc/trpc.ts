@@ -6,6 +6,7 @@ import { DomainError } from "@/server/domain/attendance"
 import { auth } from "@/lib/auth"
 
 export interface Context {
+  headers?: Headers
   ipAddress?: string
   deviceName?: string
   session?: {
@@ -38,7 +39,7 @@ export async function createContext(opts?: {
     }
   }
 
-  return { ipAddress, deviceName, session }
+  return { headers, ipAddress, deviceName, session }
 }
 
 const t = initTRPC.context<Context>().create({

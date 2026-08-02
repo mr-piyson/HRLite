@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Monitor } from "lucide-react"
+import { Monitor, Users } from "lucide-react"
 
 const settingGroups = [
   {
@@ -8,6 +8,12 @@ const settingGroups = [
     description: "Configure kiosk devices, display settings, identification methods, and attendance policy",
     href: "/settings/kiosk",
     icon: Monitor,
+  },
+  {
+    title: "User Management",
+    description: "Create, edit, and manage system accounts, roles, and access",
+    href: "/settings/users",
+    icon: Users,
   },
 ]
 

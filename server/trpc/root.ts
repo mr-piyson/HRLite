@@ -6,6 +6,7 @@ import {
   supplierRouter,
 } from "@/server/trpc/routers/directory"
 import { settingsRouter } from "@/server/trpc/routers/settings"
+import { userRouter } from "@/server/trpc/routers/users"
 
 export const appRouter = router({
   kiosk: kioskRouter,
@@ -16,6 +17,7 @@ export const appRouter = router({
   supplier: supplierRouter,
   employee: employeeRouter,
   settings: settingsRouter,
+  users: userRouter,
 })
 
 export type AppRouter = typeof appRouter
