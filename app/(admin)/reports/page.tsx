@@ -1,57 +1,38 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { trpc } from "@/lib/trpc/client"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import { formatMinutes } from "@/server/services/attendance-calculator"
-import { downloadCSV } from "@/lib/csv"
-import { todayKey } from "@/lib/utils"
-import { Download, FileSpreadsheet } from "lucide-react"
+import { useState } from "react";
+import { trpc } from "@/lib/trpc/client";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatMinutes } from "@/server/services/attendance-calculator";
+import { downloadCSV } from "@/lib/csv";
+import { todayKey } from "@/lib/utils";
+import { Download, FileSpreadsheet } from "lucide-react";
 
 function firstOfMonth() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 function labelForRange(from: string, to: string) {
-  return `${from}_${to}`
+  return `${from}_${to}`;
 }
 
-const csvHeaders = [
-  "Employee",
-  "Code",
-  "Working Hrs",
-  "Overtime",
-  "Late (min)",
-  "Payroll",
-]
+const csvHeaders = ["Employee", "Code", "Working Hrs", "Overtime", "Late (min)", "Payroll"];
 
 function employeeToRow(emp: {
-  fullName: string
-  empCode: string
-  workingMinutes: number
-  overtimeMinutes: number
-  lateMinutes: number
-  payrollAmount: number
+  fullName: string;
+  empCode: string;
+  workingMinutes: number;
+  overtimeMinutes: number;
+  lateMinutes: number;
+  payrollAmount: number;
 }) {
   return [
     emp.fullName,
@@ -60,51 +41,49 @@ function employeeToRow(emp: {
     emp.overtimeMinutes > 0 ? formatMinutes(emp.overtimeMinutes) : "0",
     String(emp.lateMinutes),
     `$${emp.payrollAmount.toFixed(2)}`,
-  ]
+  ];
 }
 
 export default function ReportsPage() {
-  const [from, setFrom] = useState(firstOfMonth())
-  const [to, setTo] = useState(todayKey())
-  const [queryKey, setQueryKey] = useState({ from, to })
+  const [from, setFrom] = useState(firstOfMonth());
+  const [to, setTo] = useState(todayKey());
+  const [queryKey, setQueryKey] = useState({ from, to });
 
   const { data, isLoading, isFetching } = trpc.report.attendance.useQuery(queryKey, {
     enabled: !!queryKey.from && !!queryKey.to,
-  })
+  });
 
-  const { data: dailyData, isLoading: dailyLoading, isFetching: dailyFetching } =
-    trpc.report.dailyBreakdown.useQuery(queryKey, {
-      enabled: !!queryKey.from && !!queryKey.to,
-    })
+  const {
+    data: dailyData,
+    isLoading: dailyLoading,
+    isFetching: dailyFetching,
+  } = trpc.report.dailyBreakdown.useQuery(queryKey, {
+    enabled: !!queryKey.from && !!queryKey.to,
+  });
 
-  const handleRefresh = () => setQueryKey({ from, to })
+  const handleRefresh = () => setQueryKey({ from, to });
 
   const handleExportEmployees = () => {
-    if (!data) return
-    const rows = data.employees.map(employeeToRow)
-    downloadCSV(
-      `All_Employees_${labelForRange(from, to)}.csv`,
-      csvHeaders,
-      rows,
-      { Range: `${from} to ${to}` },
-    )
-  }
+    if (!data) return;
+    const rows = data.employees.map(employeeToRow);
+    downloadCSV(`All_Employees_${labelForRange(from, to)}.csv`, csvHeaders, rows, { Range: `${from} to ${to}` });
+  };
 
   const handleExportSupplier = (group: {
-    supplierName: string
+    supplierName: string;
     employees: {
-      fullName: string
-      empCode: string
-      workingMinutes: number
-      overtimeMinutes: number
-      lateMinutes: number
-      payrollAmount: number
-    }[]
-    totalWorkingMinutes: number
-    totalOvertimeMinutes: number
-    totalPayroll: number
+      fullName: string;
+      empCode: string;
+      workingMinutes: number;
+      overtimeMinutes: number;
+      lateMinutes: number;
+      payrollAmount: number;
+    }[];
+    totalWorkingMinutes: number;
+    totalOvertimeMinutes: number;
+    totalPayroll: number;
   }) => {
-    const rows = group.employees.map(employeeToRow)
+    const rows = group.employees.map(employeeToRow);
     rows.push([
       "Subtotal",
       "",
@@ -112,29 +91,24 @@ export default function ReportsPage() {
       formatMinutes(group.totalOvertimeMinutes),
       "",
       `$${group.totalPayroll.toFixed(2)}`,
-    ])
-    const safeName = group.supplierName.replace(/[^a-zA-Z0-9_-]/g, "_")
-    downloadCSV(
-      `${safeName}_${labelForRange(from, to)}.csv`,
-      csvHeaders,
-      rows,
-      {
-        Range: `${from} to ${to}`,
-        Supplier: group.supplierName,
-      },
-    )
-  }
+    ]);
+    const safeName = group.supplierName.replace(/[^a-zA-Z0-9_-]/g, "_");
+    downloadCSV(`${safeName}_${labelForRange(from, to)}.csv`, csvHeaders, rows, {
+      Range: `${from} to ${to}`,
+      Supplier: group.supplierName,
+    });
+  };
 
   const handleExportAllSuppliers = () => {
-    if (!data) return
-    const rows: string[][] = []
+    if (!data) return;
+    const rows: string[][] = [];
     for (const group of data.suppliers) {
       if (rows.length > 0) {
-        rows.push(["", "", "", "", "", ""])
+        rows.push(["", "", "", "", "", ""]);
       }
-      rows.push([`--- ${group.supplierName} ---`, "", "", "", "", ""])
+      rows.push([`--- ${group.supplierName} ---`, "", "", "", "", ""]);
       for (const emp of group.employees) {
-        rows.push(employeeToRow(emp))
+        rows.push(employeeToRow(emp));
       }
       rows.push([
         `Subtotal (${group.supplierName})`,
@@ -143,50 +117,38 @@ export default function ReportsPage() {
         formatMinutes(group.totalOvertimeMinutes),
         "",
         `$${group.totalPayroll.toFixed(2)}`,
-      ])
+      ]);
     }
-    downloadCSV(
-      `All_Suppliers_${labelForRange(from, to)}.csv`,
-      csvHeaders,
-      rows,
-      { Range: `${from} to ${to}` },
-    )
-  }
+    downloadCSV(`All_Suppliers_${labelForRange(from, to)}.csv`, csvHeaders, rows, { Range: `${from} to ${to}` });
+  };
 
   const handleExportDailyBreakdown = () => {
-    if (!dailyData) return
+    if (!dailyData) return;
     const dateHeaders = dailyData.dateColumns.map((d) => {
-      const [, m, day] = d.split("-")
-      return `${m}/${day}`
-    })
-    const headers = ["Employee", "Code", "Supplier", ...dateHeaders, "Total Hours", "Absence Days"]
+      const [, m, day] = d.split("-");
+      return `${m}/${day}`;
+    });
+    const headers = ["Employee", "Code", "Supplier", ...dateHeaders, "Total Hours", "Absence Days"];
     const rows = dailyData.employees.map((emp) => [
       emp.fullName,
       emp.empCode,
       emp.supplierName,
       ...dailyData.dateColumns.map((d) => {
-        const mins = emp.daily[d]
-        return mins !== undefined && mins > 0 ? formatMinutes(mins) : "—"
+        const mins = emp.daily[d];
+        return mins !== undefined && mins > 0 ? formatMinutes(mins) : "—";
       }),
       formatMinutes(emp.totalWorkingMinutes),
       String(emp.absenceDays),
-    ])
-    downloadCSV(
-      `Daily_Breakdown_${labelForRange(from, to)}.csv`,
-      headers,
-      rows,
-      { Range: `${from} to ${to}` },
-    )
-  }
+    ]);
+    downloadCSV(`Daily_Breakdown_${labelForRange(from, to)}.csv`, headers, rows, { Range: `${from} to ${to}` });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Attendance Reports</h1>
-          <p className="text-sm text-muted-foreground">
-            Generate and view attendance reports by date range
-          </p>
+          <p className="text-sm text-muted-foreground">Generate and view attendance reports by date range</p>
         </div>
         <div className="flex items-end gap-2">
           <div className="w-44">
@@ -226,7 +188,9 @@ export default function ReportsPage() {
             <CardTitle className="text-xs font-medium text-muted-foreground">Total Overtime</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-amber-600">{data ? formatMinutes(data.summary.totalOvertimeMinutes) : "-"}</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {data ? formatMinutes(data.summary.totalOvertimeMinutes) : "-"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -288,7 +252,9 @@ export default function ReportsPage() {
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
                         {Array.from({ length: 7 }).map((_, j) => (
-                          <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell key={j}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
                         ))}
                       </TableRow>
                     ))
@@ -298,9 +264,13 @@ export default function ReportsPage() {
                         <TableCell className="font-mono text-xs">{emp.empCode}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{emp.supplierName}</TableCell>
                         <TableCell className="text-right tabular-nums">{formatMinutes(emp.workingMinutes)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{emp.overtimeMinutes > 0 ? formatMinutes(emp.overtimeMinutes) : "—"}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {emp.overtimeMinutes > 0 ? formatMinutes(emp.overtimeMinutes) : "—"}
+                        </TableCell>
                         <TableCell className="text-right tabular-nums">{emp.lateMinutes}</TableCell>
-                        <TableCell className="text-right tabular-nums font-medium">${emp.payrollAmount.toFixed(2)}</TableCell>
+                        <TableCell className="text-right tabular-nums font-medium">
+                          ${emp.payrollAmount.toFixed(2)}
+                        </TableCell>
                       </TableRow>
                     ))}
                 {!isLoading && data?.employees.length === 0 && (
@@ -338,11 +308,7 @@ export default function ReportsPage() {
                           <p className="text-sm font-medium">${group.totalPayroll.toFixed(2)}</p>
                           <p className="text-xs text-muted-foreground">Total Payroll</p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleExportSupplier(group)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleExportSupplier(group)}>
                           <Download className="mr-1 size-3.5" />
                           CSV
                         </Button>
@@ -364,16 +330,26 @@ export default function ReportsPage() {
                           <TableRow key={emp.employeeId}>
                             <TableCell className="font-medium">{emp.fullName}</TableCell>
                             <TableCell className="font-mono text-xs">{emp.empCode}</TableCell>
-                            <TableCell className="text-right tabular-nums">{formatMinutes(emp.workingMinutes)}</TableCell>
-                            <TableCell className="text-right tabular-nums">{emp.overtimeMinutes > 0 ? formatMinutes(emp.overtimeMinutes) : "—"}</TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatMinutes(emp.workingMinutes)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {emp.overtimeMinutes > 0 ? formatMinutes(emp.overtimeMinutes) : "—"}
+                            </TableCell>
                             <TableCell className="text-right tabular-nums">{emp.lateMinutes}</TableCell>
-                            <TableCell className="text-right tabular-nums font-medium">${emp.payrollAmount.toFixed(2)}</TableCell>
+                            <TableCell className="text-right tabular-nums font-medium">
+                              ${emp.payrollAmount.toFixed(2)}
+                            </TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/20 font-medium">
                           <TableCell colSpan={2}>Subtotal</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatMinutes(group.totalWorkingMinutes)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatMinutes(group.totalOvertimeMinutes)}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMinutes(group.totalWorkingMinutes)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMinutes(group.totalOvertimeMinutes)}
+                          </TableCell>
                           <TableCell />
                           <TableCell className="text-right tabular-nums">${group.totalPayroll.toFixed(2)}</TableCell>
                         </TableRow>
@@ -393,12 +369,12 @@ export default function ReportsPage() {
                   <TableHead>Code</TableHead>
                   <TableHead>Supplier</TableHead>
                   {dailyData?.dateColumns.map((d) => {
-                    const [, m, day] = d.split("-")
+                    const [, m, day] = d.split("-");
                     return (
                       <TableHead key={d} className="text-right text-xs">
                         {m}/{day}
                       </TableHead>
-                    )
+                    );
                   })}
                   <TableHead className="text-right">Total Hrs</TableHead>
                   <TableHead className="text-right">Absence</TableHead>
@@ -409,7 +385,9 @@ export default function ReportsPage() {
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
                         {Array.from({ length: 9 }).map((_, j) => (
-                          <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell key={j}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
                         ))}
                       </TableRow>
                     ))
@@ -419,8 +397,8 @@ export default function ReportsPage() {
                         <TableCell className="font-mono text-xs">{emp.empCode}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{emp.supplierName}</TableCell>
                         {dailyData.dateColumns.map((d) => {
-                          const mins = emp.daily[d]
-                          const hasHours = mins !== undefined && mins > 0
+                          const mins = emp.daily[d];
+                          const hasHours = mins !== undefined && mins > 0;
                           return (
                             <TableCell
                               key={d}
@@ -428,7 +406,7 @@ export default function ReportsPage() {
                             >
                               {hasHours ? formatMinutes(mins) : "—"}
                             </TableCell>
-                          )
+                          );
                         })}
                         <TableCell className="text-right tabular-nums font-medium">
                           {formatMinutes(emp.totalWorkingMinutes)}
@@ -444,7 +422,10 @@ export default function ReportsPage() {
                     ))}
                 {!dailyLoading && dailyData?.employees.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4 + (dailyData?.dateColumns.length ?? 0) + 2} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={4 + (dailyData?.dateColumns.length ?? 0) + 2}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       No records found for the selected date range
                     </TableCell>
                   </TableRow>
@@ -455,5 +436,5 @@ export default function ReportsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

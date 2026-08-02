@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { router, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
+import { router, adminProcedure, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
 import {
   employeeRepository,
   supplierRepository,
@@ -15,7 +15,7 @@ export const supplierRouter = router({
       supplierRepository.getById(input.id),
     ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         supplierCode: z.string().min(1),
@@ -34,7 +34,7 @@ export const supplierRouter = router({
       }
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string(),
@@ -61,7 +61,7 @@ export const supplierRouter = router({
       }
     }),
 
-  setActive: protectedProcedure
+  setActive: adminProcedure
     .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(({ input }) =>
       supplierRepository.update(input.id, { isActive: input.isActive }),
@@ -77,7 +77,7 @@ export const employeeRouter = router({
       employeeRepository.getById(input.id),
     ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         empCode: z.string().min(1),
@@ -105,7 +105,7 @@ export const employeeRouter = router({
       }
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string(),
@@ -141,7 +141,7 @@ export const employeeRouter = router({
       }
     }),
 
-  setActive: protectedProcedure
+  setActive: adminProcedure
     .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(({ input }) =>
       employeeRepository.update(input.id, { isActive: input.isActive }),

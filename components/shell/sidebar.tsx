@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
@@ -18,11 +19,14 @@ const navItems = [
   { label: "Suppliers", href: "/suppliers", icon: Building2 },
   { label: "Attendance", href: "/attendance", icon: ClipboardCheck },
   { label: "Reports", href: "/reports", icon: BarChart3 },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Settings", href: "/settings", icon: Settings, adminOnly: true },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const isAdmin = session?.user.role === "admin"
+  const items = navItems.filter((item) => !item.adminOnly || isAdmin)
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-sidebar">
@@ -34,7 +38,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/")
           return (

@@ -14,11 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { SupplierFormDialog } from "@/components/directory/supplier-form-dialog";
 import { MoreHorizontal, Eye, Edit, Power, PowerOff } from "lucide-react";
 
 export function SupplierTable() {
   const router = useRouter();
+  const isAdmin = useIsAdmin();
   const { data: suppliers, isLoading } = trpc.supplier.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -36,7 +38,7 @@ export function SupplierTable() {
         <p className="text-sm text-muted-foreground">
           {isLoading ? "Loading..." : `${suppliers?.length ?? 0} suppliers`}
         </p>
-        <SupplierFormDialog />
+        {isAdmin && <SupplierFormDialog />}
       </div>
 
       <div className="rounded-lg border">
@@ -71,13 +73,15 @@ export function SupplierTable() {
                     <TableCell className="text-sm text-muted-foreground">{s.contactNum1 ?? "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{s.email ?? "—"}</TableCell>
                     <TableCell className="text-center">
-                      <Switch
-                        checked={s.isActive}
-                        onCheckedChange={() => {
-                          if (s.isActive && !window.confirm("Deactivate this supplier?")) return
-                          toggleActive.mutate({ id: s.id, isActive: !s.isActive })
-                        }}
-                      />
+                      {isAdmin && (
+                        <Switch
+                          checked={s.isActive}
+                          onCheckedChange={() => {
+                            if (s.isActive && !window.confirm("Deactivate this supplier?")) return
+                            toggleActive.mutate({ id: s.id, isActive: !s.isActive })
+                          }}
+                        />
+                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -99,29 +103,33 @@ export function SupplierTable() {
                             <Eye className="mr-2 size-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/suppliers/${s.id}`);
-                            }}
-                          >
-                            <Edit className="mr-2 size-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleActive.mutate({ id: s.id, isActive: !s.isActive });
-                            }}
-                          >
-                            {s.isActive ? (
-                              <PowerOff className="mr-2 size-4 text-destructive" />
-                            ) : (
-                              <Power className="mr-2 size-4 text-emerald-500" />
-                            )}
-                            {s.isActive ? "Deactivate" : "Activate"}
-                          </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/suppliers/${s.id}`);
+                              }}
+                            >
+                              <Edit className="mr-2 size-4" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {isAdmin && <DropdownMenuSeparator />}
+                          {isAdmin && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleActive.mutate({ id: s.id, isActive: !s.isActive });
+                              }}
+                            >
+                              {s.isActive ? (
+                                <PowerOff className="mr-2 size-4 text-destructive" />
+                              ) : (
+                                <Power className="mr-2 size-4 text-emerald-500" />
+                              )}
+                              {s.isActive ? "Deactivate" : "Activate"}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

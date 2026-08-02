@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { router, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
+import { router, adminProcedure, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
 import { getDashboard } from "@/server/services/dashboard.service"
 import { buildReport, buildDailyBreakdownReport } from "@/server/services/report.service"
 import { attendanceRepository, attendanceLogRepository, employeeRepository } from "@/server/repositories"
@@ -43,7 +43,7 @@ export const attendanceRouter = router({
       return record
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string(),
@@ -81,7 +81,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  manualCreate: protectedProcedure
+  manualCreate: adminProcedure
     .input(
       z.object({
         employeeId: z.string(),
@@ -118,7 +118,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       try {
@@ -135,7 +135,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  approve: protectedProcedure
+  approve: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -165,7 +165,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  approveBatch: protectedProcedure
+  approveBatch: adminProcedure
     .input(z.object({
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       employeeIds: z.array(z.string()).optional(),
@@ -198,7 +198,7 @@ export const attendanceRouter = router({
       }
     }),
 
-  revertApproval: protectedProcedure
+  revertApproval: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       try {
@@ -227,7 +227,7 @@ export const attendanceRouter = router({
     }))
     .query(({ input }) => getCalendarData(input.year, input.month)),
 
-  regenerateFromLogs: protectedProcedure
+  regenerateFromLogs: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       const { regenerateAttendance } = await import("@/server/services/attendance.service")
@@ -246,7 +246,7 @@ export const attendanceLogRouter = router({
       attendanceLogRepository.recent(input.take),
     ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         employeeId: z.string(),
@@ -281,7 +281,7 @@ export const attendanceLogRouter = router({
       return log
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string(),
@@ -318,7 +318,7 @@ export const attendanceLogRouter = router({
       return updated
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       const log = await attendanceLogRepository.getById(input.id)

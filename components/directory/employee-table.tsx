@@ -15,12 +15,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { EmployeeFormDialog } from "@/components/directory/employee-form-dialog";
 import { MoreHorizontal, Eye, Edit, Power, PowerOff } from "lucide-react";
 import { CurrencySymbol, type Currency } from "@/server/domain/employee";
 
 export function EmployeeTable() {
   const router = useRouter();
+  const isAdmin = useIsAdmin();
   const { data: employees, isLoading } = trpc.employee.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -38,7 +40,7 @@ export function EmployeeTable() {
         <p className="text-sm text-muted-foreground">
           {isLoading ? "Loading..." : `${employees?.length ?? 0} employees`}
         </p>
-        <EmployeeFormDialog />
+        {isAdmin && <EmployeeFormDialog />}
       </div>
 
       <div className="rounded-lg border">
@@ -83,16 +85,18 @@ export function EmployeeTable() {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{CurrencySymbol[(emp.currency as Currency) ?? "USD"]}{emp.hourRate.toFixed(2)}</TableCell>
                     <TableCell className="text-center">
-                      <Switch
-                        checked={emp.isActive}
-                        onCheckedChange={() => {
-                          if (emp.isActive && !window.confirm("Deactivate this employee? They will not be able to clock in.")) return
-                          toggleActive.mutate({
-                            id: emp.id,
-                            isActive: !emp.isActive,
-                          })
-                        }}
-                      />
+                      {isAdmin && (
+                        <Switch
+                          checked={emp.isActive}
+                          onCheckedChange={() => {
+                            if (emp.isActive && !window.confirm("Deactivate this employee? They will not be able to clock in.")) return
+                            toggleActive.mutate({
+                              id: emp.id,
+                              isActive: !emp.isActive,
+                            })
+                          }}
+                        />
+                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -114,32 +118,38 @@ export function EmployeeTable() {
                             <Eye className="mr-2 size-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/employees/${emp.id}`);
-                            }}
-                          >
-                            <Edit className="mr-2 size-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleActive.mutate({
-                                id: emp.id,
-                                isActive: !emp.isActive,
-                              });
-                            }}
-                          >
-                            {emp.isActive ? (
-                              <PowerOff className="mr-2 size-4 text-destructive" />
-                            ) : (
-                              <Power className="mr-2 size-4 text-emerald-500" />
-                            )}
-                            {emp.isActive ? "Deactivate" : "Activate"}
-                          </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/employees/${emp.id}`);
+                              }}
+                            >
+                              <Edit className="mr-2 size-4" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {isAdmin && (
+                            <DropdownMenuSeparator />
+                          )}
+                          {isAdmin && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleActive.mutate({
+                                  id: emp.id,
+                                  isActive: !emp.isActive,
+                                });
+                              }}
+                            >
+                              {emp.isActive ? (
+                                <PowerOff className="mr-2 size-4 text-destructive" />
+                              ) : (
+                                <Power className="mr-2 size-4 text-emerald-500" />
+                              )}
+                              {emp.isActive ? "Deactivate" : "Activate"}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { ArrowLeft, Edit2 } from "lucide-react";
 
 export default function SupplierDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const isAdmin = useIsAdmin();
   const [editing, setEditing] = useState(false);
   const { data: _supplier, isLoading } = trpc.supplier.getById.useQuery({ id });
   const supplier = _supplier ?? undefined;
@@ -63,10 +65,12 @@ export default function SupplierDetailPage() {
             {supplier.isActive ? "Active" : "Inactive"}
           </Badge>
         </div>
-        <Button size="sm" onClick={() => setEditing(true)}>
-          <Edit2 className="mr-1 size-4" />
-          Edit
-        </Button>
+        {isAdmin && (
+          <Button size="sm" onClick={() => setEditing(true)}>
+            <Edit2 className="mr-1 size-4" />
+            Edit
+          </Button>
+        )}
       </div>
 
       <Card>

@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { router, protectedProcedure } from "@/server/trpc/trpc"
+import { router, adminProcedure } from "@/server/trpc/trpc"
 import { kioskConfigRepository } from "@/server/repositories"
 import { regenerateKioskToken, generateKioskToken } from "@/server/services/kiosk.service"
 
@@ -25,41 +25,41 @@ const configShape = {
 }
 
 export const settingsRouter = router({
-  list: protectedProcedure.query(() =>
+  list: adminProcedure.query(() =>
     kioskConfigRepository.list(),
   ),
 
-  getById: protectedProcedure
+  getById: adminProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input }) =>
       kioskConfigRepository.getById(input.id),
     ),
 
-  active: protectedProcedure.query(() =>
+  active: adminProcedure.query(() =>
     kioskConfigRepository.getActive(),
   ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(z.object(configShape))
     .mutation(async ({ input }) => {
       const token = generateKioskToken()
       return kioskConfigRepository.create({ ...input, accessToken: token })
     }),
 
-  regenerateToken: protectedProcedure
+  regenerateToken: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
     .mutation(async ({ input }) => {
       const token = await regenerateKioskToken(input.id)
       return { token }
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(z.object({ id: z.string(), data: z.object(configShape).partial() }))
     .mutation(({ input }) =>
       kioskConfigRepository.update(input.id, input.data),
     ),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ input }) =>
       kioskConfigRepository.delete(input.id),

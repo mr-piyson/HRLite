@@ -3,6 +3,7 @@
 import { useState, use } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { DocumentTypeLabel, CurrencySymbol, type Currency, type DocumentType } f
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const isAdmin = useIsAdmin();
   const [editing, setEditing] = useState(false);
   const { data: _employee, isLoading } = trpc.employee.getById.useQuery({ id });
   const employee = _employee ?? undefined;
@@ -70,10 +72,12 @@ export default function EmployeeDetailPage() {
             {employee.isActive ? "Active" : "Inactive"}
           </Badge>
         </div>
-        <Button size="sm" onClick={() => setEditing(true)}>
-          <Edit2 className="mr-1 size-4" />
-          Edit
-        </Button>
+        {isAdmin && (
+          <Button size="sm" onClick={() => setEditing(true)}>
+            <Edit2 className="mr-1 size-4" />
+            Edit
+          </Button>
+        )}
       </div>
 
       <Card>

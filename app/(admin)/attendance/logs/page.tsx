@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +25,7 @@ const logTypeColors: Record<string, string> = {
 };
 
 export default function AttendanceLogsPage() {
+  const isAdmin = useIsAdmin();
   const { data, isLoading } = trpc.attendanceLog.list.useQuery({ take: 100 });
   const [editingLog, setEditingLog] = useState<{
     id: string;
@@ -46,7 +48,7 @@ export default function AttendanceLogsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Attendance Logs</h1>
           <p className="text-sm text-muted-foreground">Immutable audit trail of all kiosk actions</p>
         </div>
-        <LogCreateDialog />
+        {isAdmin && <LogCreateDialog />}
       </div>
 
       <div className="rounded-lg border">
@@ -100,52 +102,54 @@ export default function AttendanceLogsPage() {
                       {log.notes ?? "—"}
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          }
-                        ></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setEditingLog({
-                                id: log.id,
-                                employeeId: log.employeeId,
-                                logTime: log.logTime,
-                                logType: log.logType,
-                                deviceName: log.deviceName,
-                                ipAddress: log.ipAddress,
-                                notes: log.notes,
-                                employee: log.employee,
-                              })
+                      {isAdmin && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button variant="ghost" size="icon" className="size-8">
+                                <MoreHorizontal className="size-4" />
+                              </Button>
                             }
-                          >
-                            <Pencil className="mr-2 size-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() =>
-                              setEditingLog({
-                                id: log.id,
-                                employeeId: log.employeeId,
-                                logTime: log.logTime,
-                                logType: log.logType,
-                                deviceName: log.deviceName,
-                                ipAddress: log.ipAddress,
-                                notes: log.notes,
-                                employee: log.employee,
-                              })
-                            }
-                          >
-                            <Trash2 className="mr-2 size-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          ></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setEditingLog({
+                                  id: log.id,
+                                  employeeId: log.employeeId,
+                                  logTime: log.logTime,
+                                  logType: log.logType,
+                                  deviceName: log.deviceName,
+                                  ipAddress: log.ipAddress,
+                                  notes: log.notes,
+                                  employee: log.employee,
+                                })
+                              }
+                            >
+                              <Pencil className="mr-2 size-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() =>
+                                setEditingLog({
+                                  id: log.id,
+                                  employeeId: log.employeeId,
+                                  logTime: log.logTime,
+                                  logType: log.logType,
+                                  deviceName: log.deviceName,
+                                  ipAddress: log.ipAddress,
+                                  notes: log.notes,
+                                  employee: log.employee,
+                                })
+                              }
+                            >
+                              <Trash2 className="mr-2 size-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

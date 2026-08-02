@@ -75,6 +75,16 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   })
 })
 
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.session.user.role !== "admin") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You must be an admin to access this resource",
+    })
+  }
+  return next({ ctx })
+})
+
 export function mapDomainError(err: unknown): never {
   if (err instanceof DomainError) {
     const map = {
