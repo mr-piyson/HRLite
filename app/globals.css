@@ -161,3 +161,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+:root:not(.dark) [data-slot="button"].border-border.bg-background {
+  border-color: oklch(0.6 0 0);
+}
