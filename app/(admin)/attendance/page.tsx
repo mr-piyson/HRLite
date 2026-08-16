@@ -91,6 +91,7 @@ function AttendancePageInner() {
     breakMinutes: number;
   } | null>(null);
   const { data, isLoading } = trpc.attendance.byDate.useQuery({ date });
+  const { data: settings } = trpc.general.get.useQuery();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const { data: monthData } = trpc.attendance.calendarByMonth.useQuery(
@@ -333,7 +334,7 @@ function AttendancePageInner() {
                       <TableCell className="font-medium">{a.employee.fullName}</TableCell>
                       <TableCell className="font-mono text-xs">{a.employee.empCode}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {a.supplier?.supplierName ?? "Direct"}
+                        {a.supplier?.supplierName ?? settings?.companyName ?? "Direct"}
                       </TableCell>
                       <TableCell className={a.adminEditReason ? adminCellClass : "tabular-nums"}>
                         <AdminTooltip reason={a.adminEditReason} updatedAt={a.updatedAt}>

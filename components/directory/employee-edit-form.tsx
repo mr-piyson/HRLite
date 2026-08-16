@@ -50,6 +50,7 @@ export function EmployeeEditForm({
 
   const utils = trpc.useUtils()
   const { data: suppliers } = trpc.supplier.list.useQuery()
+  const { data: settings } = trpc.general.get.useQuery()
 
   const updateMutation = trpc.employee.update.useMutation({
     onSuccess: () => {
@@ -196,7 +197,7 @@ export function EmployeeEditForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Direct Employee</SelectItem>
+                  <SelectItem value="none">{settings?.companyName ?? "Direct Employee"}</SelectItem>
                   {suppliers?.filter((s) => s.isActive).map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.supplierName}</SelectItem>
                   ))}

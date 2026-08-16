@@ -1,6 +1,7 @@
 import {
   attendanceLogRepository,
   attendanceRepository,
+  appSettingRepository,
 } from "@/server/repositories"
 import { AttendanceStatus, LogType } from "@/server/domain/attendance"
 
@@ -33,11 +34,11 @@ export interface DashboardData {
 export async function getDashboard(
   dateKey: string,
 ): Promise<DashboardData> {
-  const [rows, recentLogs] = await Promise.all([
+  const [rows, recentLogs, settings] = await Promise.all([
     attendanceRepository.forDate(dateKey),
     attendanceLogRepository.recent(12),
+    appSettingRepository.get(),
   ])
-
   const checkedIn = rows.filter((r) => r.timeIn).length
   const checkedOut = rows.filter((r) => r.timeOut).length
   const currentlyWorking = rows.filter((r) => r.timeIn && !r.timeOut).length
@@ -63,7 +64,7 @@ export async function getDashboard(
       supplierMap.get(key) ??
       ({
         supplierId: r.supplierId,
-        supplierName: r.supplier?.supplierName ?? "Direct Employees",
+        supplierName: r.supplier?.supplierName ?? settings.companyName ?? "Direct Employees",
         present: 0,
         workingMinutes: 0,
       } satisfies SupplierAttendanceStat)

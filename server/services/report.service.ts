@@ -1,4 +1,4 @@
-import { attendanceRepository, employeeRepository } from "@/server/repositories"
+import { attendanceRepository, employeeRepository, appSettingRepository } from "@/server/repositories"
 import { AttendanceStatus } from "@/server/domain/attendance"
 
 export interface EmployeeRow {
@@ -63,11 +63,17 @@ export interface DailyBreakdownReport {
 
 const DIRECT_KEY = "__direct__"
 
+async function directSupplierLabel(): Promise<string> {
+  const settings = await appSettingRepository.get()
+  return settings.companyName ?? "Direct Employees"
+}
+
 export async function buildReport(
   from: string,
   to: string,
 ): Promise<AttendanceReport> {
   const rows = await attendanceRepository.forRange(from, to)
+  const directLabel = await directSupplierLabel()
 
   const byEmployee = new Map<string, EmployeeRow>()
   let missingCheckouts = 0
@@ -95,7 +101,7 @@ export async function buildReport(
         fullName: r.employee.fullName,
         designation: r.employee.designation,
         supplierId: r.supplierId,
-        supplierName: r.supplier?.supplierName ?? "Direct Employees",
+        supplierName: r.supplier?.supplierName ?? directLabel,
         hourRate,
         daysPresent: r.status === AttendanceStatus.Present ? 1 : 0,
         daysLate: r.status === AttendanceStatus.Late ? 1 : 0,
@@ -181,6 +187,7 @@ export async function buildDailyBreakdownReport(
   const rows = await attendanceRepository.forRange(from, to)
   const dateColumns = dateRange(from, to)
   const dateSet = new Set(dateColumns)
+  const directLabel = await directSupplierLabel()
 
   const byEmployee = new Map<string, DailyBreakdownEmployee>()
 
@@ -195,7 +202,7 @@ export async function buildDailyBreakdownReport(
         empCode: r.employee.empCode,
         fullName: r.employee.fullName,
         designation: r.employee.designation,
-        supplierName: r.supplier?.supplierName ?? "Direct Employees",
+        supplierName: r.supplier?.supplierName ?? directLabel,
         daily: {},
         totalWorkingMinutes: 0,
         absenceDays: 0,

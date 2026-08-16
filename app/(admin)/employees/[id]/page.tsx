@@ -19,6 +19,7 @@ export default function EmployeeDetailPage() {
   const isAdmin = useIsAdmin();
   const [editing, setEditing] = useState(false);
   const { data: _employee, isLoading } = trpc.employee.getById.useQuery({ id });
+  const { data: settings } = trpc.general.get.useQuery();
   const employee = _employee ?? undefined;
 
   if (editing) {
@@ -120,11 +121,7 @@ export default function EmployeeDetailPage() {
             </div>
             <div>
               <dt className="text-muted-foreground">Supplier</dt>
-              <dd className="font-medium">{employee.supplier?.supplierName ?? "Direct Employee"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">RFID</dt>
-              <dd className="font-mono text-xs">{employee.rfid ?? "—"}</dd>
+              <dd className="font-medium">{employee.supplier?.supplierName ?? settings?.companyName ?? "Direct Employee"}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Created</dt>

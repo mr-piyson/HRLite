@@ -21,8 +21,6 @@ export function EmployeeFormDialog() {
   const [contactNo, setContactNo] = useState("");
   const [hourRate, setHourRate] = useState("0");
   const [supplierId, setSupplierId] = useState<string | null>(null);
-  const [rfid, setRfid] = useState("");
-  const [pin, setPin] = useState("");
   const [nationality, setNationality] = useState("");
   const [documentType, setDocumentType] = useState<string | null>(null);
   const [documentNumber, setDocumentNumber] = useState("");
@@ -51,8 +49,6 @@ export function EmployeeFormDialog() {
     setContactNo("");
     setHourRate("0");
     setSupplierId(null);
-    setRfid("");
-    setPin("");
     setNationality("");
     setDocumentType(null);
     setDocumentNumber("");
@@ -73,9 +69,7 @@ export function EmployeeFormDialog() {
       nationality: nationality || undefined,
       documentType: documentType || undefined,
       documentNumber: documentNumber || undefined,
-      supplierId,
-      rfid: rfid || undefined,
-      pin: pin || undefined,
+      supplierId
     });
   };
 
@@ -187,12 +181,15 @@ export function EmployeeFormDialog() {
             </div>
             <div className="space-y-1">
               <Label>Supplier</Label>
-              <Select onValueChange={(v: string | null) => setSupplierId(v === "none" ? null : v)}>
+              <Select
+                value={supplierId ?? "none"}
+                onValueChange={(v: string | null) => setSupplierId(v === "none" ? null : v)}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Direct Employee" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Direct Employee</SelectItem>
+                  <SelectItem value="none">{settings?.companyName ?? "Direct Employee"}</SelectItem>
                   {suppliers
                     ?.filter((s) => s.isActive)
                     .map((s) => (
@@ -202,17 +199,6 @@ export function EmployeeFormDialog() {
                     ))}
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="rfid">RFID Tag</Label>
-              <Input id="rfid" value={rfid} onChange={(e) => setRfid(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="pin">PIN Code</Label>
-              <Input id="pin" type="password" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value)} />
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import { prisma } from "@/server/db/prisma"
 import {
   attendanceLogRepository,
   attendanceRepository,
+  appSettingRepository,
   employeeRepository,
   kioskConfigRepository,
 } from "@/server/repositories"
@@ -55,13 +56,14 @@ export async function punch(input: PunchInput): Promise<PunchResult> {
 export async function lookupEmployee(empCode: string) {
   const employee = await employeeRepository.getByCode(empCode)
   if (!employee) return null
+  const settings = await appSettingRepository.get()
   return {
     id: employee.id,
     fullName: employee.fullName,
     empCode: employee.empCode,
     designation: employee.designation,
     photo: employee.photo,
-    supplierName: employee.supplier?.supplierName ?? "Direct Employee",
+    supplierName: employee.supplier?.supplierName ?? settings.companyName ?? "Direct Employee",
   }
 }
 
