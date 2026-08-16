@@ -17,7 +17,7 @@ import { trpc } from "@/lib/trpc/client"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Employee } from "@prisma/client"
-import { DocumentTypeLabel, CurrencyLabel, CurrencySymbol, type Currency } from "@/server/domain/employee"
+import { DocumentTypeLabel } from "@/server/domain/employee"
 
 interface EmployeeEditFormProps {
   employee: Employee | undefined
@@ -38,15 +38,11 @@ export function EmployeeEditForm({
   const [department, setDepartment] = useState(employee?.department ?? "")
   const [project, setProject] = useState(employee?.project ?? "")
   const [contactNo, setContactNo] = useState(employee?.contactNo ?? "")
-  const [hourRate, setHourRate] = useState(String(employee?.hourRate ?? "0"))
   const [supplierId, setSupplierId] = useState<string | null>(employee?.supplierId ?? null)
-  const [rfid, setRfid] = useState(employee?.rfid ?? "")
-  const [pin, setPin] = useState(employee?.pin ?? "")
   const [isActive, setIsActive] = useState(employee?.isActive ?? true)
   const [nationality, setNationality] = useState(employee?.nationality ?? "")
   const [documentType, setDocumentType] = useState<string | null>(employee?.documentType ?? null)
   const [documentNumber, setDocumentNumber] = useState(employee?.documentNumber ?? "")
-  const [currency, setCurrency] = useState(employee?.currency ?? "SAR")
 
   const utils = trpc.useUtils()
   const { data: suppliers } = trpc.supplier.list.useQuery()
@@ -86,14 +82,10 @@ export function EmployeeEditForm({
         department: department || undefined,
         project: project || undefined,
         contactNo: contactNo || undefined,
-        hourRate: parseFloat(hourRate) || 0,
-        currency,
         nationality: nationality || undefined,
         documentType: documentType || undefined,
         documentNumber: documentNumber || undefined,
         supplierId,
-        rfid: rfid || undefined,
-        pin: pin || undefined,
         isActive,
       },
     })
@@ -147,22 +139,6 @@ export function EmployeeEditForm({
               <Input id="nationality" value={nationality} onChange={(e) => setNationality(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Currency</Label>
-              <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CurrencyLabel).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
               <Label>Document Type</Label>
               <Select value={documentType ?? "none"} onValueChange={(v) => setDocumentType(v === "none" ? null : v)}>
                 <SelectTrigger>
@@ -176,16 +152,12 @@ export function EmployeeEditForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="documentNumber">Document Number</Label>
-              <Input id="documentNumber" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} />
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="hourRate">Hourly Rate ({CurrencySymbol[currency as Currency ?? "USD"]})</Label>
-              <Input id="hourRate" type="number" step="0.5" value={hourRate} onChange={(e) => setHourRate(e.target.value)} />
+              <Label htmlFor="documentNumber">Document Number</Label>
+              <Input id="documentNumber" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Supplier</Label>
@@ -203,17 +175,6 @@ export function EmployeeEditForm({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label htmlFor="rfid">RFID Tag</Label>
-              <Input id="rfid" value={rfid} onChange={(e) => setRfid(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="pin">PIN Code</Label>
-              <Input id="pin" type="password" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value)} />
             </div>
           </div>
 

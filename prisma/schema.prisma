@@ -45,12 +45,29 @@ model Employee {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  supplier       Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplier       Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   attendanceLogs AttendanceLog[]
   attendance     Attendance[]
+  rateHistory    EmployeeRateHistory[]
 
   @@index([supplierId])
   @@index([rfid])
+}
+
+model EmployeeRateHistory {
+  id            String    @id @default(cuid())
+  employeeId    String
+  hourRate      Float
+  currency      String?   @default("SAR")
+  effectiveDate String
+  reason        String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+
+  employee  Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, effectiveDate])
 }
 
 model AttendanceLog {
@@ -159,6 +176,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   approvedAttendances Attendance[]
+  createdRateHistory   EmployeeRateHistory[]
 
   @@unique([email])
   @@map("user")

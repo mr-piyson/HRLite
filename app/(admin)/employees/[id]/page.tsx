@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmployeeEditForm } from "@/components/directory/employee-edit-form";
+import { RateHistoryCard } from "@/components/directory/rate-history-card";
 import Link from "next/link";
 import { ArrowLeft, Edit2, Eye } from "lucide-react";
 import { DocumentTypeLabel, CurrencySymbol, type Currency, type DocumentType } from "@/server/domain/employee";
@@ -130,6 +131,12 @@ export default function EmployeeDetailPage() {
           </dl>
         </CardContent>
       </Card>
+
+      <RateHistoryCard
+        employeeId={employee.id}
+        employeeCurrency={employee.currency ?? "SAR"}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

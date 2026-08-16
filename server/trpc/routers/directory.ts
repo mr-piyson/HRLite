@@ -3,8 +3,15 @@ import { router, adminProcedure, protectedProcedure, mapDomainError } from "@/se
 import {
   employeeRepository,
   supplierRepository,
+  rateHistoryRepository,
 } from "@/server/repositories"
 import { DomainError } from "@/server/domain/attendance"
+import { effectiveRateFor } from "@/server/domain/employee"
+import { todayKey } from "@/lib/utils"
+
+const dateKey = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected yyyy-mm-dd")
 
 export const supplierRouter = router({
   list: protectedProcedure.query(() => supplierRepository.list()),
@@ -98,10 +105,17 @@ export const employeeRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        return await employeeRepository.create({
+        const employee = await employeeRepository.create({
           ...input,
           supplierId: input.supplierId ?? null,
         })
+        await rateHistoryRepository.create({
+          employeeId: employee.id,
+          hourRate: input.hourRate,
+          currency: input.currency ?? "SAR",
+          effectiveDate: todayKey(),
+        })
+        return employee
       } catch (err) {
         mapDomainError(err)
       }
@@ -118,8 +132,6 @@ export const employeeRouter = router({
           department: z.string().optional(),
           project: z.string().optional(),
           contactNo: z.string().optional(),
-          hourRate: z.number().min(0).optional(),
-          currency: z.string().optional(),
           nationality: z.string().optional(),
           documentType: z.string().optional(),
           documentNumber: z.string().optional(),
@@ -149,5 +161,46 @@ export const employeeRouter = router({
     .input(z.object({ id: z.string(), isActive: z.boolean() }))
     .mutation(({ input }) =>
       employeeRepository.update(input.id, { isActive: input.isActive }),
+    ),
+
+  changeRate: adminProcedure
+    .input(
+      z.object({
+        employeeId: z.string(),
+        hourRate: z.number().min(0),
+        effectiveDate: dateKey,
+        currency: z.string().optional(),
+        reason: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const employee = await employeeRepository.getById(input.employeeId)
+        if (!employee) {
+          throw new DomainError("Employee not found", "NOT_FOUND")
+        }
+        await rateHistoryRepository.create({
+          employeeId: input.employeeId,
+          hourRate: input.hourRate,
+          currency: input.currency ?? employee.currency ?? "SAR",
+          effectiveDate: input.effectiveDate,
+          reason: input.reason,
+          createdById: ctx.session.user.id,
+        })
+        const history = await rateHistoryRepository.listForEmployee(input.employeeId)
+        const current = effectiveRateFor(todayKey(), history)
+        return employeeRepository.update(input.employeeId, {
+          hourRate: current.hourRate,
+          currency: current.currency,
+        })
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
+
+  rateHistory: protectedProcedure
+    .input(z.object({ employeeId: z.string() }))
+    .query(({ input }) =>
+      rateHistoryRepository.listForEmployee(input.employeeId),
     ),
 })

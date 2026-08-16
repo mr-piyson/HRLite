@@ -1,5 +1,6 @@
-import { attendanceRepository, employeeRepository, appSettingRepository } from "@/server/repositories"
+import { attendanceRepository, employeeRepository, appSettingRepository, rateHistoryRepository } from "@/server/repositories"
 import { AttendanceStatus } from "@/server/domain/attendance"
+import { effectiveRateFor } from "@/server/domain/employee"
 
 export interface EmployeeRow {
   employeeId: string
@@ -75,6 +76,15 @@ export async function buildReport(
   const rows = await attendanceRepository.forRange(from, to)
   const directLabel = await directSupplierLabel()
 
+  const employeeIds = [...new Set(rows.map((r) => r.employeeId))]
+  const history = await rateHistoryRepository.listForEmployees(employeeIds)
+  const historyByEmployee = new Map<string, typeof history>()
+  for (const h of history) {
+    const list = historyByEmployee.get(h.employeeId) ?? []
+    list.push(h)
+    historyByEmployee.set(h.employeeId, list)
+  }
+
   const byEmployee = new Map<string, EmployeeRow>()
   let missingCheckouts = 0
 
@@ -83,7 +93,8 @@ export async function buildReport(
 
     const key = r.employeeId
     const existing = byEmployee.get(key)
-    const hourRate = r.employee.hourRate ?? 0
+    const rate = effectiveRateFor(r.date, historyByEmployee.get(r.employeeId) ?? [])
+    const hourRate = rate.hourRate ?? 0
     const addPay = (r.workingMinutes / 60) * hourRate
 
     if (existing) {
@@ -279,9 +290,18 @@ export async function buildDailyBreakdownExport(
   }
 
   const allEmployees = await employeeRepository.list()
+  const activeEmployees = allEmployees.filter((e) => e.isActive)
+  const history = await rateHistoryRepository.listForEmployees(
+    activeEmployees.map((e) => e.id),
+  )
+  const historyByEmployee = new Map<string, typeof history>()
+  for (const h of history) {
+    const list = historyByEmployee.get(h.employeeId) ?? []
+    list.push(h)
+    historyByEmployee.set(h.employeeId, list)
+  }
 
-  const employees = allEmployees
-    .filter((e) => e.isActive)
+  const employees = activeEmployees
     .sort((a, b) => a.fullName.localeCompare(b.fullName))
     .map((e, idx) => {
       const agg = byEmployee.get(e.id) ?? { daily: {}, totalHours: 0 }
@@ -296,6 +316,7 @@ export async function buildDailyBreakdownExport(
       // employee worked at least one day in the range. Otherwise the whole row
       // is treated as on leave / resigned (yellow).
       if (agg.totalHours === 0) absenceDays = 0
+      const rate = effectiveRateFor(from, historyByEmployee.get(e.id) ?? [])
       return {
         sNo: idx + 1,
         iqamaNo: e.documentNumber ?? "",
@@ -303,7 +324,7 @@ export async function buildDailyBreakdownExport(
         fullName: e.fullName,
         designation: e.designation ?? "",
         project: e.project ?? "",
-        ratePerHour: e.hourRate ?? 0,
+        ratePerHour: rate.hourRate ?? 0,
         daily,
         totalHours: agg.totalHours,
         absenceDays,

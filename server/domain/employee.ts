@@ -57,3 +57,31 @@ export const CurrencySymbol: Record<Currency, string> = {
   BDT: "\u09F3",
   NPR: "Rs",
 }
+
+/** A rate history entry (employee rate + currency effective from a date). */
+export interface EffectiveRate {
+  hourRate: number
+  currency: string | null
+  effectiveDate: string
+}
+
+/**
+ * Resolve the rate in effect for a given date key (yyyy-mm-dd).
+ *
+ * Picks the history entry with the greatest `effectiveDate` <= `dateKey`;
+ * entries are expected to be sorted by effectiveDate desc (tie-break on
+ * createdAt desc). Falls back to the earliest entry when none predates the
+ * date, or a zero rate when there is no history at all.
+ */
+export function effectiveRateFor(
+  dateKey: string,
+  history: readonly EffectiveRate[],
+): EffectiveRate {
+  if (history.length === 0) {
+    return { hourRate: 0, currency: "SAR", effectiveDate: dateKey }
+  }
+  for (const entry of history) {
+    if (entry.effectiveDate <= dateKey) return entry
+  }
+  return history[history.length - 1]
+}

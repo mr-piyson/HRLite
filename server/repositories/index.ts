@@ -63,6 +63,25 @@ export const employeeRepository = {
   },
 }
 
+export const rateHistoryRepository = {
+  create(data: Prisma.EmployeeRateHistoryUncheckedCreateInput) {
+    return prisma.employeeRateHistory.create({ data })
+  },
+  listForEmployee(employeeId: string) {
+    return prisma.employeeRateHistory.findMany({
+      where: { employeeId },
+      include: { createdBy: { select: { id: true, name: true } } },
+      orderBy: [{ effectiveDate: "desc" }, { createdAt: "desc" }],
+    })
+  },
+  listForEmployees(employeeIds: string[]) {
+    return prisma.employeeRateHistory.findMany({
+      where: { employeeId: { in: employeeIds } },
+      orderBy: [{ effectiveDate: "desc" }, { createdAt: "desc" }],
+    })
+  },
+}
+
 export const attendanceLogRepository = {
   create(data: Prisma.AttendanceLogUncheckedCreateInput) {
     return prisma.attendanceLog.create({ data })
