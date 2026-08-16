@@ -36,6 +36,8 @@ export function EmployeeEditForm({
   const [fullName, setFullName] = useState(employee?.fullName ?? "")
   const [designation, setDesignation] = useState(employee?.designation ?? "")
   const [department, setDepartment] = useState(employee?.department ?? "")
+  const [project, setProject] = useState(employee?.project ?? "")
+  const [contactNo, setContactNo] = useState(employee?.contactNo ?? "")
   const [hourRate, setHourRate] = useState(String(employee?.hourRate ?? "0"))
   const [supplierId, setSupplierId] = useState<string | null>(employee?.supplierId ?? null)
   const [rfid, setRfid] = useState(employee?.rfid ?? "")
@@ -81,6 +83,8 @@ export function EmployeeEditForm({
         fullName,
         designation: designation || undefined,
         department: department || undefined,
+        project: project || undefined,
+        contactNo: contactNo || undefined,
         hourRate: parseFloat(hourRate) || 0,
         currency,
         nationality: nationality || undefined,
@@ -122,6 +126,17 @@ export function EmployeeEditForm({
             <div className="space-y-1">
               <Label htmlFor="department">Department</Label>
               <Input id="department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="project">Project</Label>
+              <Input id="project" value={project} onChange={(e) => setProject(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="contactNo">Contact No.</Label>
+              <Input id="contactNo" value={contactNo} onChange={(e) => setContactNo(e.target.value)} />
             </div>
           </div>
 

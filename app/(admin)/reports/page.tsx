@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatMinutes } from "@/server/services/attendance-calculator";
 import { downloadCSV } from "@/lib/csv";
 import { todayKey } from "@/lib/utils";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 
 function firstOfMonth() {
   const d = new Date();
@@ -60,6 +60,8 @@ export default function ReportsPage() {
   } = trpc.report.dailyBreakdown.useQuery(queryKey, {
     enabled: !!queryKey.from && !!queryKey.to,
   });
+
+  const exportXlsx = trpc.report.exportDailyBreakdownXlsx.useMutation();
 
   const handleRefresh = () => setQueryKey({ from, to });
 
@@ -122,25 +124,19 @@ export default function ReportsPage() {
     downloadCSV(`All_Suppliers_${labelForRange(from, to)}.csv`, csvHeaders, rows, { Range: `${from} to ${to}` });
   };
 
-  const handleExportDailyBreakdown = () => {
+  const handleExportDailyBreakdown = async () => {
     if (!dailyData) return;
-    const dateHeaders = dailyData.dateColumns.map((d) => {
-      const [, m, day] = d.split("-");
-      return `${m}/${day}`;
+    const { filename, base64 } = await exportXlsx.mutateAsync({ from, to });
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const blob = new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    const headers = ["Employee", "Code", "Supplier", ...dateHeaders, "Total Hours", "Absence Days"];
-    const rows = dailyData.employees.map((emp) => [
-      emp.fullName,
-      emp.empCode,
-      emp.supplierName,
-      ...dailyData.dateColumns.map((d) => {
-        const mins = emp.daily[d];
-        return mins !== undefined && mins > 0 ? formatMinutes(mins) : "—";
-      }),
-      formatMinutes(emp.totalWorkingMinutes),
-      String(emp.absenceDays),
-    ]);
-    downloadCSV(`Daily_Breakdown_${labelForRange(from, to)}.csv`, headers, rows, { Range: `${from} to ${to}` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (
@@ -225,9 +221,18 @@ export default function ReportsPage() {
               </>
             )}
             {dailyData && (
-              <Button variant="outline" size="sm" onClick={handleExportDailyBreakdown}>
-                <Download className="mr-1 size-4" />
-                Export Daily Breakdown
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportDailyBreakdown}
+                disabled={exportXlsx.isPending}
+              >
+                {exportXlsx.isPending ? (
+                  <Loader2 className="mr-1 size-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="mr-1 size-4" />
+                )}
+                {exportXlsx.isPending ? "Exporting..." : "Export Daily Breakdown (Excel)"}
               </Button>
             )}
           </div>

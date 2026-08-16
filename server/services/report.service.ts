@@ -1,4 +1,4 @@
-import { attendanceRepository } from "@/server/repositories"
+import { attendanceRepository, employeeRepository } from "@/server/repositories"
 import { AttendanceStatus } from "@/server/domain/attendance"
 
 export interface EmployeeRow {
@@ -215,4 +215,94 @@ export async function buildDailyBreakdownReport(
   )
 
   return { from, to, dateColumns, employees }
+}
+
+export interface DailyBreakdownExportEmployee {
+  sNo: number
+  iqamaNo: string
+  contactNo: string
+  fullName: string
+  designation: string
+  project: string
+  ratePerHour: number
+  /** date (yyyy-mm-dd) -> hours worked that day (integer, rounded). */
+  daily: Record<string, number>
+  totalHours: number
+  absenceDays: number
+  hasAnyHours: boolean
+}
+
+export interface DailyBreakdownExport {
+  title: string
+  from: string
+  to: string
+  dateColumns: string[]
+  employees: DailyBreakdownExportEmployee[]
+}
+
+/**
+ * Aggregated daily breakdown for the xlsx export. Unlike
+ * `buildDailyBreakdownReport`, every active employee is included (even those
+ * with no attendance in range, so they surface as "on leave" rows), and daily
+ * values are integer hours rather than minutes.
+ */
+export async function buildDailyBreakdownExport(
+  from: string,
+  to: string,
+  title: string,
+): Promise<DailyBreakdownExport> {
+  const rows = await attendanceRepository.forRange(from, to)
+  const dateColumns = dateRange(from, to)
+
+  const byEmployee = new Map<
+    string,
+    { daily: Record<string, number>; totalHours: number }
+  >()
+
+  for (const r of rows) {
+    if (!dateColumns.includes(r.date)) continue
+    const hours = Math.round(r.workingMinutes / 60)
+    let emp = byEmployee.get(r.employeeId)
+    if (!emp) {
+      emp = { daily: {}, totalHours: 0 }
+      byEmployee.set(r.employeeId, emp)
+    }
+    emp.daily[r.date] = hours
+    emp.totalHours += hours
+  }
+
+  const allEmployees = await employeeRepository.list()
+
+  const employees = allEmployees
+    .filter((e) => e.isActive)
+    .sort((a, b) => a.fullName.localeCompare(b.fullName))
+    .map((e, idx) => {
+      const agg = byEmployee.get(e.id) ?? { daily: {}, totalHours: 0 }
+      const daily: Record<string, number> = {}
+      let absenceDays = 0
+      for (const d of dateColumns) {
+        const hours = agg.daily[d] ?? 0
+        daily[d] = hours
+        if (hours === 0) absenceDays++
+      }
+      // Days with no recorded hours are only "absences" (red cells) when the
+      // employee worked at least one day in the range. Otherwise the whole row
+      // is treated as on leave / resigned (yellow).
+      if (agg.totalHours === 0) absenceDays = 0
+      return {
+        sNo: idx + 1,
+        iqamaNo: e.documentNumber ?? "",
+        contactNo: e.contactNo ?? "",
+        fullName: e.fullName,
+        designation: e.designation ?? "",
+        project: e.project ?? "",
+        ratePerHour: e.hourRate ?? 0,
+        daily,
+        totalHours: agg.totalHours,
+        absenceDays,
+        hasAnyHours: agg.totalHours > 0,
+      }
+    })
+
+  return { title, from, to, dateColumns, employees }
 }

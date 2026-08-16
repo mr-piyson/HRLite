@@ -95,6 +95,14 @@ export default function EmployeeDetailPage() {
               <dd className="font-medium">{employee.department ?? "—"}</dd>
             </div>
             <div>
+              <dt className="text-muted-foreground">Project</dt>
+              <dd className="font-medium">{employee.project ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Contact No.</dt>
+              <dd className="font-medium">{employee.contactNo ?? "—"}</dd>
+            </div>
+            <div>
               <dt className="text-muted-foreground">Nationality</dt>
               <dd className="font-medium">{employee.nationality ?? "—"}</dd>
             </div>

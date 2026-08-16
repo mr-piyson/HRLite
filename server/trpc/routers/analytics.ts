@@ -1,8 +1,9 @@
 import { z } from "zod"
 import { router, adminProcedure, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
 import { getDashboard } from "@/server/services/dashboard.service"
-import { buildReport, buildDailyBreakdownReport } from "@/server/services/report.service"
-import { attendanceRepository, attendanceLogRepository, employeeRepository } from "@/server/repositories"
+import { buildReport, buildDailyBreakdownReport, buildDailyBreakdownExport } from "@/server/services/report.service"
+import { buildDailyBreakdownWorkbook } from "@/server/services/xlsx/daily-breakdown-template"
+import { attendanceRepository, attendanceLogRepository, employeeRepository, appSettingRepository } from "@/server/repositories"
 import {
   adminUpdateAttendance,
   adminManualCreateAttendance,
@@ -350,4 +351,17 @@ export const reportRouter = router({
     .query(({ input }) =>
       buildDailyBreakdownReport(input.from, input.to),
     ),
+
+  exportDailyBreakdownXlsx: protectedProcedure
+    .input(z.object({ from: dateKey, to: dateKey }))
+    .mutation(async ({ input }) => {
+      const settings = await appSettingRepository.get()
+      const title = settings.companyName ?? "Haya Manpower Supplier - Riyadh"
+      const data = await buildDailyBreakdownExport(input.from, input.to, title)
+      const buffer = await buildDailyBreakdownWorkbook(data)
+      return {
+        filename: `Daily_Breakdown_${input.from}_${input.to}.xlsx`,
+        base64: buffer.toString("base64"),
+      }
+    }),
 })

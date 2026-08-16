@@ -17,6 +17,8 @@ export function EmployeeFormDialog() {
   const [fullName, setFullName] = useState("");
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
+  const [project, setProject] = useState("");
+  const [contactNo, setContactNo] = useState("");
   const [hourRate, setHourRate] = useState("0");
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [rfid, setRfid] = useState("");
@@ -45,6 +47,8 @@ export function EmployeeFormDialog() {
     setFullName("");
     setDesignation("");
     setDepartment("");
+    setProject("");
+    setContactNo("");
     setHourRate("0");
     setSupplierId(null);
     setRfid("");
@@ -62,6 +66,8 @@ export function EmployeeFormDialog() {
       fullName,
       designation: designation || undefined,
       department: department || undefined,
+      project: project || undefined,
+      contactNo: contactNo || undefined,
       hourRate: parseFloat(hourRate) || 0,
       currency,
       nationality: nationality || undefined,
@@ -113,6 +119,17 @@ export function EmployeeFormDialog() {
             <div className="space-y-1">
               <Label htmlFor="department">Department</Label>
               <Input id="department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="project">Project</Label>
+              <Input id="project" value={project} onChange={(e) => setProject(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="contactNo">Contact No.</Label>
+              <Input id="contactNo" value={contactNo} onChange={(e) => setContactNo(e.target.value)} />
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 generator client {
   provider = "prisma-client-js"
 }
-
+ 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -30,6 +30,8 @@ model Employee {
   fullName       String
   designation    String?
   department     String?
+  project        String?
+  contactNo      String?
   hourRate       Float    @default(0)
   currency       String?  @default("SAR")
   nationality    String?
