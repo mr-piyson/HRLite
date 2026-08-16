@@ -30,18 +30,21 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 import { Plus, TrendingUp } from "lucide-react"
 import { CurrencySymbol, CurrencyLabel, type Currency } from "@/server/domain/employee"
 import { todayKey } from "@/lib/utils"
 
 interface RateHistoryCardProps {
   employeeId: string
+  currentRate: number
   employeeCurrency: string
   isAdmin: boolean
 }
 
 export function RateHistoryCard({
   employeeId,
+  currentRate,
   employeeCurrency,
   isAdmin,
 }: RateHistoryCardProps) {
@@ -79,6 +82,13 @@ export function RateHistoryCard({
       toast.error("Enter a valid rate")
       return
     }
+    const sameRate = Math.abs(value - currentRate) < 1e-9
+    const sameCurrency = (currency ?? "SAR") === (employeeCurrency ?? "SAR")
+    if (sameRate && sameCurrency) {
+      setOpen(false)
+      toast.info("Rate unchanged")
+      return
+    }
     changeRate.mutate({
       employeeId,
       hourRate: value,
@@ -91,14 +101,20 @@ export function RateHistoryCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-sm font-medium">Rate History</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-sm font-medium">Rate History</CardTitle>
+          <Badge variant="secondary" className="tabular-nums">
+            Current: {CurrencySymbol[(employeeCurrency as Currency) ?? "SAR"]}
+            {currentRate.toFixed(2)}
+          </Badge>
+        </div>
         {isAdmin && (
           <Dialog
             open={open}
             onOpenChange={(v) => {
               setOpen(v)
               if (v) {
-                setHourRate("")
+                setHourRate(String(currentRate))
                 setReason("")
                 setEffectiveDate(todayKey())
                 setCurrency(employeeCurrency ?? "SAR")
@@ -126,7 +142,7 @@ export function RateHistoryCard({
                     <Input
                       id="hourRate"
                       type="number"
-                      step="0.5"
+                      step="0.001"
                       min={0}
                       value={hourRate}
                       onChange={(e) => setHourRate(e.target.value)}
@@ -213,7 +229,7 @@ export function RateHistoryCard({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {history.map((h) => (
+              {history.map((h:any) => (
                 <TableRow key={h.id}>
                   <TableCell className="font-medium">
                     {new Date(`${h.effectiveDate}T00:00:00`).toLocaleDateString()}

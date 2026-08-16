@@ -174,7 +174,7 @@ export function EmployeeFormDialog() {
               <Input
                 id="hourRate"
                 type="number"
-                step="0.5"
+                step="0.001"
                 value={hourRate}
                 onChange={(e) => setHourRate(e.target.value)}
               />

@@ -134,6 +134,7 @@ export default function EmployeeDetailPage() {
 
       <RateHistoryCard
         employeeId={employee.id}
+        currentRate={employee.hourRate}
         employeeCurrency={employee.currency ?? "SAR"}
         isAdmin={isAdmin}
       />

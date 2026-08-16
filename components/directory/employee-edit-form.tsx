@@ -57,6 +57,12 @@ export function EmployeeEditForm({
     onError: (err) => toast.error(err.message),
   })
 
+  const currentSupplier = suppliers?.find((s) => s.id === supplierId)
+  const supplierOptions = [
+    ...(suppliers?.filter((s) => s.isActive) ?? []),
+    ...(currentSupplier && !currentSupplier.isActive ? [currentSupplier] : []),
+  ]
+
   if (isLoading) {
     return <Skeleton className="h-96 w-full" />
   }
@@ -170,8 +176,11 @@ export function EmployeeEditForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{settings?.companyName ?? "Direct Employee"}</SelectItem>
-                  {suppliers?.filter((s) => s.isActive).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.supplierName}</SelectItem>
+                  {supplierOptions.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.supplierName}
+                      {!s.isActive ? " (inactive)" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
