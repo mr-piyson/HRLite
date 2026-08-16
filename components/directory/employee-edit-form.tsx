@@ -62,6 +62,20 @@ export function EmployeeEditForm({
     ...(suppliers?.filter((s) => s.isActive) ?? []),
     ...(currentSupplier && !currentSupplier.isActive ? [currentSupplier] : []),
   ]
+  const directLabel = settings?.companyName ?? "Direct Employee"
+
+  const supplierLabel = (val: string | null | undefined) => {
+    if (!val || val === "none") return directLabel
+    const found = suppliers?.find((s) => s.id === val)
+    if (found) return found.supplierName
+    const empSupplier = (
+      employee as Employee & { supplier?: { supplierName?: string | null } | null }
+    )?.supplier
+    if (val === employee?.supplierId && empSupplier?.supplierName) {
+      return empSupplier.supplierName
+    }
+    return directLabel
+  }
 
   if (isLoading) {
     return <Skeleton className="h-96 w-full" />
@@ -172,10 +186,12 @@ export function EmployeeEditForm({
                 onValueChange={(v) => setSupplierId(v === "none" ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {(val) => supplierLabel(val as string | null)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{settings?.companyName ?? "Direct Employee"}</SelectItem>
+                  <SelectItem value="none">{directLabel}</SelectItem>
                   {supplierOptions.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.supplierName}

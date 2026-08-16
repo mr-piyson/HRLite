@@ -29,6 +29,12 @@ export function EmployeeFormDialog() {
   const utils = trpc.useUtils();
   const { data: suppliers } = trpc.supplier.list.useQuery();
   const { data: settings } = trpc.general.get.useQuery();
+  const directLabel = settings?.companyName ?? "Direct Employee";
+
+  const supplierLabel = (val: string | null | undefined) => {
+    if (!val || val === "none") return directLabel;
+    return suppliers?.find((s) => s.id === val)?.supplierName ?? directLabel;
+  };
 
   const createMutation = trpc.employee.create.useMutation({
     onSuccess: () => {
@@ -41,6 +47,9 @@ export function EmployeeFormDialog() {
 
   const handleClose = () => {
     setOpen(false);
+  };
+
+  const resetForm = () => {
     setEmpCode("");
     setFullName("");
     setDesignation("");
@@ -78,7 +87,7 @@ export function EmployeeFormDialog() {
       open={open}
       onOpenChange={(v) => {
         setOpen(v);
-        handleClose();
+        if (v) resetForm();
       }}
     >
       <DialogTrigger
@@ -186,10 +195,12 @@ export function EmployeeFormDialog() {
                 onValueChange={(v: string | null) => setSupplierId(v === "none" ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {(val) => supplierLabel(val as string | null)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{settings?.companyName ?? "Direct Employee"}</SelectItem>
+                  <SelectItem value="none">{directLabel}</SelectItem>
                   {suppliers
                     ?.filter((s) => s.isActive)
                     .map((s) => (
