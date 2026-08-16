@@ -69,11 +69,11 @@ export function SupplierTable() {
               : (
                   <>
                     <TableRow
-                      className="cursor-default bg-muted/30"
-                      onClick={() => router.push("/settings/general")}
+                      className="cursor-pointer bg-muted/30"
+                      onClick={() => router.push("/suppliers/direct")}
                       tabIndex={0}
                       role="button"
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/settings/general") }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/suppliers/direct") }}
                     >
                       <TableCell className="font-mono text-xs">DIRECT</TableCell>
                       <TableCell className="font-medium">{settings?.companyName ?? "Direct Supplier"}</TableCell>

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SupplierEditForm } from "@/components/directory/supplier-edit-form";
+import { SupplierAttendanceTable } from "@/components/directory/supplier-attendance-table";
 import Link from "next/link";
 import { ArrowLeft, Edit2 } from "lucide-react";
 
@@ -98,6 +99,8 @@ export default function SupplierDetailPage() {
           </dl>
         </CardContent>
       </Card>
+
+      <SupplierAttendanceTable supplierId={supplier.id} />
     </div>
   );
 }
