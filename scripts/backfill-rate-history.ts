@@ -18,7 +18,7 @@ async function main() {
       data: {
         employeeId: e.id,
         hourRate: e.hourRate ?? 0,
-        currency: e.currency ?? "SAR",
+        currency: e.currency ?? "BHD",
         effectiveDate: toDateKey(e.createdAt),
       },
     })

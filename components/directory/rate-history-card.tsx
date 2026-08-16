@@ -52,7 +52,7 @@ export function RateHistoryCard({
   const [open, setOpen] = useState(false)
   const [hourRate, setHourRate] = useState("")
   const [effectiveDate, setEffectiveDate] = useState(todayKey())
-  const [currency, setCurrency] = useState(employeeCurrency ?? "SAR")
+  const [currency, setCurrency] = useState(employeeCurrency ?? "BHD")
   const [reason, setReason] = useState("")
 
   const { data: history, isLoading } = trpc.employee.rateHistory.useQuery({
@@ -83,7 +83,7 @@ export function RateHistoryCard({
       return
     }
     const sameRate = Math.abs(value - currentRate) < 1e-9
-    const sameCurrency = (currency ?? "SAR") === (employeeCurrency ?? "SAR")
+    const sameCurrency = (currency ?? "BHD") === (employeeCurrency ?? "BHD")
     if (sameRate && sameCurrency) {
       setOpen(false)
       toast.info("Rate unchanged")
@@ -104,7 +104,7 @@ export function RateHistoryCard({
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-medium">Rate History</CardTitle>
           <Badge variant="secondary" className="tabular-nums">
-            Current: {CurrencySymbol[(employeeCurrency as Currency) ?? "SAR"]}
+            Current: {CurrencySymbol[(employeeCurrency as Currency) ?? "BHD"]}
             {currentRate.toFixed(2)}
           </Badge>
         </div>
@@ -117,7 +117,7 @@ export function RateHistoryCard({
                 setHourRate(String(currentRate))
                 setReason("")
                 setEffectiveDate(todayKey())
-                setCurrency(employeeCurrency ?? "SAR")
+                setCurrency(employeeCurrency ?? "BHD")
               }
             }}
           >
@@ -137,7 +137,7 @@ export function RateHistoryCard({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label htmlFor="hourRate">
-                      Hourly Rate ({CurrencySymbol[(currency as Currency) ?? "SAR"]})
+                      Hourly Rate ({CurrencySymbol[(currency as Currency) ?? "BHD"]})
                     </Label>
                     <Input
                       id="hourRate"
@@ -240,7 +240,7 @@ export function RateHistoryCard({
                     )}
                   </TableCell>
                   <TableCell className="tabular-nums">
-                    {CurrencySymbol[(h.currency as Currency) ?? "SAR"]}
+                    {CurrencySymbol[(h.currency as Currency) ?? "BHD"]}
                     {h.hourRate.toFixed(2)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">

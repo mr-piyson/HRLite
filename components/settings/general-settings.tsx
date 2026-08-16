@@ -43,7 +43,7 @@ export function GeneralSettings() {
 
   const [appName, setAppName] = useState("Attendance Kiosk")
   const [appLogo, setAppLogo] = useState<string | null>(null)
-  const [defaultCurrency, setDefaultCurrency] = useState("SAR")
+  const [defaultCurrency, setDefaultCurrency] = useState("BHD")
   const [defaultWorkdayStart, setDefaultWorkdayStart] = useState("09:00")
   const [weekendDays, setWeekendDays] = useState<(typeof WEEKDAYS)[number][]>(["Fri", "Sat"])
   const [companyName, setCompanyName] = useState("")

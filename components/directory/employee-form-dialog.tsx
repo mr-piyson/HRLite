@@ -24,7 +24,7 @@ export function EmployeeFormDialog() {
   const [nationality, setNationality] = useState("");
   const [documentType, setDocumentType] = useState<string | null>(null);
   const [documentNumber, setDocumentNumber] = useState("");
-  const [currency, setCurrency] = useState("SAR");
+  const [currency, setCurrency] = useState("BHD");
 
   const utils = trpc.useUtils();
   const { data: suppliers } = trpc.supplier.list.useQuery();
@@ -61,7 +61,7 @@ export function EmployeeFormDialog() {
     setNationality("");
     setDocumentType(null);
     setDocumentNumber("");
-    setCurrency(settings?.defaultCurrency ?? "SAR");
+    setCurrency(settings?.defaultCurrency ?? "BHD");
   };
 
   const handleSubmit = (e: React.FormEvent) => {

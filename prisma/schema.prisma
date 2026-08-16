@@ -33,7 +33,7 @@ model Employee {
   project        String?
   contactNo      String?
   hourRate       Float    @default(0)
-  currency       String?  @default("SAR")
+  currency       String?  @default("BHD")
   nationality    String?
   documentType   String?
   documentNumber String?
@@ -58,7 +58,7 @@ model EmployeeRateHistory {
   id            String    @id @default(cuid())
   employeeId    String
   hourRate      Float
-  currency      String?   @default("SAR")
+  currency      String?   @default("BHD")
   effectiveDate String
   reason        String?
   createdById   String?
@@ -151,7 +151,7 @@ model AppSetting {
   id                  String   @id @default("default")
   appName             String   @default("Attendance Kiosk")
   appLogo             String?
-  defaultCurrency     String   @default("SAR")
+  defaultCurrency     String   @default("BHD")
   defaultWorkdayStart String   @default("09:00")
   weekendDays         String[] @default(["Fri", "Sat"])
   companyName         String?

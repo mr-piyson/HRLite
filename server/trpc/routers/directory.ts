@@ -112,7 +112,7 @@ export const employeeRouter = router({
         await rateHistoryRepository.create({
           employeeId: employee.id,
           hourRate: input.hourRate,
-          currency: input.currency ?? "SAR",
+          currency: input.currency ?? "BHD",
           effectiveDate: todayKey(),
         })
         return employee
@@ -182,7 +182,7 @@ export const employeeRouter = router({
         await rateHistoryRepository.create({
           employeeId: input.employeeId,
           hourRate: input.hourRate,
-          currency: input.currency ?? employee.currency ?? "SAR",
+          currency: input.currency ?? employee.currency ?? "BHD",
           effectiveDate: input.effectiveDate,
           reason: input.reason,
           createdById: ctx.session.user.id,

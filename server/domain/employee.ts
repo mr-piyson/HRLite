@@ -20,6 +20,7 @@ export const DocumentTypeLabel: Record<DocumentType, string> = {
 /** Supported currencies for hourly rate. */
 export const Currency = {
   SAR: "SAR",
+  BHD: "BHD",
   USD: "USD",
   EUR: "EUR",
   GBP: "GBP",
@@ -34,6 +35,7 @@ export type Currency = (typeof Currency)[keyof typeof Currency]
 
 export const CurrencyLabel: Record<Currency, string> = {
   SAR: "SAR - Saudi Riyal",
+  BHD: "BHD - Bahraini Dinar",
   USD: "USD - US Dollar",
   EUR: "EUR - Euro",
   GBP: "GBP - British Pound",
@@ -47,6 +49,7 @@ export const CurrencyLabel: Record<Currency, string> = {
 
 export const CurrencySymbol: Record<Currency, string> = {
   SAR: "\uFDFC",
+  BHD: "BD",
   USD: "$",
   EUR: "\u20AC",
   GBP: "\u00A3",
@@ -78,7 +81,7 @@ export function effectiveRateFor(
   history: readonly EffectiveRate[],
 ): EffectiveRate {
   if (history.length === 0) {
-    return { hourRate: 0, currency: "SAR", effectiveDate: dateKey }
+    return { hourRate: 0, currency: "BHD", effectiveDate: dateKey }
   }
   for (const entry of history) {
     if (entry.effectiveDate <= dateKey) return entry
