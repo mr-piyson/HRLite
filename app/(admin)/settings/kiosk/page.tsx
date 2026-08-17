@@ -240,11 +240,15 @@ export default function KioskConfigPage() {
             ) : (
               <div className="space-y-1">
                 {configs?.map((c) => (
-                  <button
+                  <div
                     key={c.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedId(c.id)}
-                    className={`flex w-full items-start gap-3 rounded-lg p-3 text-left text-sm transition-colors hover:bg-accent ${
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") setSelectedId(c.id);
+                    }}
+                    className={`flex w-full items-start gap-3 rounded-lg p-3 text-left text-sm transition-colors hover:bg-accent cursor-pointer ${
                       (selectedId ?? activeConfig?.id) === c.id ? "bg-accent" : ""
                     }`}
                   >
@@ -266,7 +270,7 @@ export default function KioskConfigPage() {
                         {c.slug && <CopyButton text={getKioskUrl(c.slug)} />}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
