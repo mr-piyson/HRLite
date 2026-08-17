@@ -63,7 +63,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
 
   const selectedProjectName = projectId && projectId !== "none"
-    ? projects?.find((p) => p.id === projectId)?.name
+    ? projects?.find((p:any) => p.id === projectId)?.name
     : null
 
   const updateMutation = trpc.settings.update.useMutation({
@@ -219,7 +219,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
       No Project (Unassigned Employees)
     </SelectItem>
 
-    {projects?.map((p) => (
+    {projects?.map((p:any) => (
       <SelectItem key={p.id} value={p.id}>
         {p.name} ({p._count.employees} employees)
       </SelectItem>
