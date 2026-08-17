@@ -26,7 +26,7 @@ import {
 import { trpc } from "@/lib/trpc/client"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Copy, CheckCircle2, ExternalLink, KeyRound, Eye, EyeOff } from "lucide-react"
+import { Copy, ExternalLink, KeyRound, Eye, EyeOff } from "lucide-react"
 import type { KioskConfig } from "@prisma/client"
 
 interface KioskConfigEditorProps {
