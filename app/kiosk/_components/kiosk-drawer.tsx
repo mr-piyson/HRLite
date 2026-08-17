@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc/client"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { XIcon, Search, CheckCircle2, Circle, LogIn, LogOut, User } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 
 interface KioskDrawerProps {
   open: boolean
@@ -15,7 +16,7 @@ interface KioskDrawerProps {
 export function KioskDrawer({ open, onOpenChange, kioskToken }: KioskDrawerProps) {
   const [search, setSearch] = useState("")
 
-  const { data: employees = [], refetch } =
+  const { data: employees = [], refetch, isLoading } =
     trpc.kiosk.getActiveEmployees.useQuery({ kioskToken }, {
       enabled: open,
     })
@@ -85,20 +86,29 @@ export function KioskDrawer({ open, onOpenChange, kioskToken }: KioskDrawerProps
           </div>
 
           <div className="px-5 pt-3 pb-2">
-            <div className="flex items-center gap-2.5 rounded-xl bg-[#1e1f20] border border-zinc-800 px-3 py-2.5 focus-within:border-zinc-700 transition-colors">
+            <div className={cn(
+              "flex items-center gap-2.5 rounded-xl bg-[#1e1f20] border border-zinc-800 px-3 py-2.5 focus-within:border-zinc-700 transition-colors",
+              punchMutation.isPending && "opacity-50 pointer-events-none",
+            )}>
               <Search className="size-4 text-zinc-500 shrink-0" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or code..."
+                disabled={punchMutation.isPending}
                 className="w-full bg-transparent border-0 p-0 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-0"
               />
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-2 space-y-1">
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center pt-12 text-zinc-500">
+                <Spinner className="size-6 text-zinc-400" />
+                <p className="text-sm mt-3">Loading employees…</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center pt-12 text-zinc-500">
                 <Search className="size-8 mb-2 opacity-40" />
                 <p className="text-sm">
@@ -109,16 +119,16 @@ export function KioskDrawer({ open, onOpenChange, kioskToken }: KioskDrawerProps
               </div>
             ) : (
               filtered.map((emp) => {
-                const isPending = punchMutation.isPending
+                const isBusy = punchMutation.isPending
                 return (
                   <button
                     key={emp.id}
                     onClick={() => handleEmployeeClick(emp.id)}
-                    disabled={isPending}
+                    disabled={isBusy}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-150",
-                      isPending
-                        ? "opacity-50 cursor-not-allowed"
+                      isBusy
+                        ? "opacity-50 cursor-not-allowed pointer-events-none"
                         : "hover:bg-[#1e1f20] active:bg-[#282a2c] cursor-pointer",
                     )}
                   >
