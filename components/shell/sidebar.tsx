@@ -12,12 +12,14 @@ import {
   ClipboardCheck,
   BarChart3,
   Settings,
+  FolderKanban,
 } from "lucide-react"
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Employees", href: "/employees", icon: Users },
   { label: "Suppliers", href: "/suppliers", icon: Building2 },
+  { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Attendance", href: "/attendance", icon: ClipboardCheck },
   { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Settings", href: "/settings", icon: Settings, adminOnly: true },

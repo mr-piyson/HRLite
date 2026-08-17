@@ -55,6 +55,7 @@ export const kioskRouter = router({
         kioskName: c.kioskName,
         slug: c.slug,
         location: c.location,
+        projectName: c.project?.name ?? null,
       }))
   }),
 
@@ -100,6 +101,7 @@ export const kioskRouter = router({
             ipAddress: ctx.ipAddress,
             deviceName: input.deviceName ?? ctx.deviceName,
             kioskId: input.kioskId,
+            kioskToken: input.kioskToken,
           },
         })
       } catch (err) {
@@ -112,7 +114,7 @@ export const kioskRouter = router({
     .query(async ({ input }) => {
       await assertKioskToken(input.kioskToken)
       try {
-        return await getActiveEmployeesWithStatus()
+        return await getActiveEmployeesWithStatus(input.kioskToken)
       } catch (err) {
         mapDomainError(err)
       }
@@ -131,7 +133,7 @@ export const kioskRouter = router({
     .mutation(async ({ input }) => {
       await assertKioskToken(input.kioskToken)
       try {
-        return await adminPunch(input.employeeId)
+        return await adminPunch(input.employeeId, input.kioskToken)
       } catch (err) {
         mapDomainError(err)
       }

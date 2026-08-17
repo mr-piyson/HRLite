@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Project {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employees    Employee[]
+  kioskConfigs KioskConfig[]
+}
+
 model Supplier {
   id            String   @id @default(cuid())
   supplierCode  String   @unique
@@ -30,7 +42,7 @@ model Employee {
   fullName       String
   designation    String?
   department     String?
-  project        String?
+  projectId      String?
   contactNo      String?
   hourRate       Float    @default(0)
   currency       String?  @default("BHD")
@@ -46,11 +58,13 @@ model Employee {
   updatedAt      DateTime @updatedAt
 
   supplier       Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  project        Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
   attendanceLogs AttendanceLog[]
   attendance     Attendance[]
   rateHistory    EmployeeRateHistory[]
 
   @@index([supplierId])
+  @@index([projectId])
   @@index([rfid])
 }
 
@@ -136,6 +150,7 @@ model KioskConfig {
   accessToken            String?
   faceRecognitionEnabled Boolean  @default(false)
   fingerprintEnabled     Boolean  @default(false)
+  projectId              String?
   workdayStart           String   @default("09:00")
   lateGraceMinutes       Int      @default(15)
   standardWorkMinutes    Int      @default(480)
@@ -144,7 +159,10 @@ model KioskConfig {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
   @@index([accessToken])
+  @@index([projectId])
 }
 
 model AppSetting {

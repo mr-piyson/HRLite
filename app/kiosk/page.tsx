@@ -63,7 +63,9 @@ export default function KioskDirectoryPage() {
                       {kiosk.kioskName}
                     </p>
                     <p className="text-xs text-zinc-500 truncate">
-                      {kiosk.location ?? "No location set"}
+                      {kiosk.projectName
+                        ? kiosk.projectName
+                        : kiosk.location ?? "No location set"}
                     </p>
                   </div>
                   <ArrowRight className="size-4 text-zinc-600 group-hover:text-zinc-400 transition-colors shrink-0" />

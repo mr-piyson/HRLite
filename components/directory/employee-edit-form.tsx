@@ -36,7 +36,7 @@ export function EmployeeEditForm({
   const [fullName, setFullName] = useState(employee?.fullName ?? "")
   const [designation, setDesignation] = useState(employee?.designation ?? "")
   const [department, setDepartment] = useState(employee?.department ?? "")
-  const [project, setProject] = useState(employee?.project ?? "")
+  const [projectId, setProjectId] = useState<string | null>(employee?.projectId ?? null)
   const [contactNo, setContactNo] = useState(employee?.contactNo ?? "")
   const [supplierId, setSupplierId] = useState<string | null>(employee?.supplierId ?? null)
   const [isActive, setIsActive] = useState(employee?.isActive ?? true)
@@ -46,6 +46,7 @@ export function EmployeeEditForm({
 
   const utils = trpc.useUtils()
   const { data: suppliers } = trpc.supplier.list.useQuery()
+  const { data: projects } = trpc.project.listActive.useQuery()
   const { data: settings } = trpc.general.get.useQuery()
 
   const updateMutation = trpc.employee.update.useMutation({
@@ -100,7 +101,7 @@ export function EmployeeEditForm({
         fullName,
         designation: designation || undefined,
         department: department || undefined,
-        project: project || undefined,
+        projectId: projectId || undefined,
         contactNo: contactNo || undefined,
         nationality: nationality || undefined,
         documentType: documentType || undefined,
@@ -144,8 +145,23 @@ export function EmployeeEditForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="project">Project</Label>
-              <Input id="project" value={project} onChange={(e) => setProject(e.target.value)} />
+              <Label>Project</Label>
+              <Select
+                value={projectId ?? "none"}
+                onValueChange={(v: string | null) => setProjectId(v === "none" ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Unassigned)</SelectItem>
+                  {projects?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="contactNo">Contact No.</Label>

@@ -17,6 +17,7 @@ const configShape = {
   pinEnabled: z.boolean(),
   faceRecognitionEnabled: z.boolean(),
   fingerprintEnabled: z.boolean(),
+  projectId: z.string().nullable().optional(),
   workdayStart: z.string().regex(/^\d{2}:\d{2}$/),
   lateGraceMinutes: z.number().int().min(0).max(240),
   standardWorkMinutes: z.number().int().min(60).max(1440),

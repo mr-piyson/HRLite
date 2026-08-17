@@ -323,7 +323,7 @@ export async function buildDailyBreakdownExport(
         contactNo: e.contactNo ?? "",
         fullName: e.fullName,
         designation: e.designation ?? "",
-        project: e.project ?? "",
+        project: e.project?.name ?? "",
         ratePerHour: rate.hourRate ?? 0,
         daily,
         totalHours: agg.totalHours,

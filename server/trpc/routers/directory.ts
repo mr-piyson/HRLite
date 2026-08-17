@@ -91,7 +91,7 @@ export const employeeRouter = router({
         fullName: z.string().min(1),
         designation: z.string().optional(),
         department: z.string().optional(),
-        project: z.string().optional(),
+        projectId: z.string().nullable().optional(),
         contactNo: z.string().optional(),
         hourRate: z.number().min(0).default(0),
         currency: z.string().optional(),
@@ -108,6 +108,7 @@ export const employeeRouter = router({
         const employee = await employeeRepository.create({
           ...input,
           supplierId: input.supplierId ?? null,
+          projectId: input.projectId ?? null,
         })
         await rateHistoryRepository.create({
           employeeId: employee.id,
@@ -130,7 +131,7 @@ export const employeeRouter = router({
           fullName: z.string().min(1).optional(),
           designation: z.string().optional(),
           department: z.string().optional(),
-          project: z.string().optional(),
+          projectId: z.string().nullable().optional(),
           contactNo: z.string().optional(),
           nationality: z.string().optional(),
           documentType: z.string().optional(),
@@ -151,6 +152,7 @@ export const employeeRouter = router({
         return await employeeRepository.update(input.id, {
           ...input.data,
           supplierId: input.data.supplierId ?? null,
+          projectId: input.data.projectId ?? null,
         })
       } catch (err) {
         mapDomainError(err)

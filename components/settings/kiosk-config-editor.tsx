@@ -7,6 +7,13 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -44,6 +51,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
   const [lateGraceMinutes, setLateGraceMinutes] = useState(config?.lateGraceMinutes ?? 15)
   const [standardWorkMinutes, setStandardWorkMinutes] = useState(config?.standardWorkMinutes ?? 480)
   const [halfDayMinutes, setHalfDayMinutes] = useState(config?.halfDayMinutes ?? 240)
+  const [projectId, setProjectId] = useState<string | null>(config?.projectId ?? null)
 
   const [adminPin, setAdminPin] = useState(config?.adminPin ?? "")
   const [showAdminPin, setShowAdminPin] = useState(false)
@@ -51,6 +59,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
   const [showRegenerateAlert, setShowRegenerateAlert] = useState(false)
 
   const utils = trpc.useUtils()
+  const { data: projects } = trpc.project.listActive.useQuery()
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
 
   const updateMutation = trpc.settings.update.useMutation({
@@ -113,6 +122,7 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
         pinEnabled,
         faceRecognitionEnabled,
         fingerprintEnabled,
+        projectId,
         workdayStart,
         lateGraceMinutes,
         standardWorkMinutes,
@@ -174,6 +184,38 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Project Assignment */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Project Assignment</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <Label>Assigned Project</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Optionally link this kiosk to a project. If set, only that project&apos;s employees will be shown.
+              If not set, only employees with no project assignment will be shown.
+            </p>
+            <Select
+              value={projectId ?? "none"}
+              onValueChange={(v: string | null) => setProjectId(v === "none" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Project (Unassigned Employees)</SelectItem>
+                {projects?.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} ({p._count.employees} employees)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 

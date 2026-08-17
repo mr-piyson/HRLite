@@ -26,6 +26,7 @@ export interface KioskContext {
   deviceName?: string
   ipAddress?: string
   kioskId?: string
+  kioskToken?: string
 }
 
 export interface PunchInput extends IdentificationRequest {
@@ -48,6 +49,10 @@ export async function punch(input: PunchInput): Promise<PunchResult> {
 
   if (!employee) {
     throw new DomainError("Employee not recognized", "NOT_FOUND")
+  }
+
+  if (input.context?.kioskToken) {
+    await assertProjectMembership(employee.id, input.context.kioskToken)
   }
 
   return createPunch(employee, input.context)
@@ -119,11 +124,21 @@ function dayBounds(dateKey: string): { start: Date; end: Date } {
   return { start, end }
 }
 
-export async function getActiveEmployeesWithStatus(): Promise<EmployeeWithStatus[]> {
-  const [employees, config] = await Promise.all([
-    employeeRepository.listActive(),
-    kioskConfigRepository.getActive(),
-  ])
+export async function getActiveEmployeesWithStatus(kioskToken?: string): Promise<EmployeeWithStatus[]> {
+  let employees
+
+  if (kioskToken) {
+    const config = await kioskConfigRepository.getByToken(kioskToken)
+    if (config?.projectId) {
+      employees = await employeeRepository.listByProject(config.projectId)
+    } else if (config && !config.projectId) {
+      employees = await employeeRepository.listUnassigned()
+    } else {
+      employees = await employeeRepository.listActive()
+    }
+  } else {
+    employees = await employeeRepository.listActive()
+  }
 
   const now = new Date()
   const dateKey = toDateKey(now)
@@ -185,14 +200,31 @@ export async function regenerateKioskToken(
   return token
 }
 
-export async function adminPunch(employeeId: string): Promise<PunchResult> {
+export async function adminPunch(employeeId: string, kioskToken?: string): Promise<PunchResult> {
   const employee = await employeeRepository.getById(employeeId)
 
   if (!employee) {
     throw new DomainError("Employee not found", "NOT_FOUND")
   }
 
+  if (kioskToken) {
+    await assertProjectMembership(employeeId, kioskToken)
+  }
+
   return createPunch(employee)
+}
+
+async function assertProjectMembership(employeeId: string, kioskToken: string) {
+  const config = await kioskConfigRepository.getByToken(kioskToken)
+  if (!config?.projectId) return
+
+  const employee = await employeeRepository.getById(employeeId)
+  if (employee?.projectId !== config.projectId) {
+    throw new DomainError(
+      "Employee not assigned to this project",
+      "FORBIDDEN",
+    )
+  }
 }
 
 async function createPunch(

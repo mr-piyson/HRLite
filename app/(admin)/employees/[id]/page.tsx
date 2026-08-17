@@ -98,7 +98,7 @@ export default function EmployeeDetailPage() {
             </div>
             <div>
               <dt className="text-muted-foreground">Project</dt>
-              <dd className="font-medium">{employee.project ?? "—"}</dd>
+              <dd className="font-medium">{employee.project?.name ?? "—"}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Contact No.</dt>

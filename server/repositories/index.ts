@@ -1,6 +1,48 @@
 import { prisma } from "@/server/db/prisma"
 import type { Prisma } from "@prisma/client"
 
+export const projectRepository = {
+  list() {
+    return prisma.project.findMany({
+      include: { _count: { select: { employees: true } } },
+      orderBy: { name: "asc" },
+    })
+  },
+  listActive() {
+    return prisma.project.findMany({
+      where: { isActive: true },
+      include: { _count: { select: { employees: true } } },
+      orderBy: { name: "asc" },
+    })
+  },
+  getById(id: string) {
+    return prisma.project.findUnique({
+      where: { id },
+      include: {
+        employees: {
+          where: { isActive: true },
+          orderBy: { fullName: "asc" },
+          include: { supplier: true },
+        },
+        _count: { select: { employees: true } },
+      },
+    })
+  },
+  create(data: Prisma.ProjectUncheckedCreateInput) {
+    return prisma.project.create({ data })
+  },
+  update(id: string, data: Prisma.ProjectUncheckedUpdateInput) {
+    return prisma.project.update({ where: { id }, data })
+  },
+  async delete(id: string) {
+    const count = await prisma.employee.count({ where: { projectId: id } })
+    if (count > 0) {
+      throw new Error("Cannot delete project with assigned employees")
+    }
+    return prisma.project.delete({ where: { id } })
+  },
+}
+
 export const supplierRepository = {
   list() {
     return prisma.supplier.findMany({
@@ -27,20 +69,33 @@ export const supplierRepository = {
 export const employeeRepository = {
   list() {
     return prisma.employee.findMany({
-      include: { supplier: true },
+      include: { supplier: true, project: true },
       orderBy: { fullName: "asc" },
     })
   },
   listActive() {
     return prisma.employee.findMany({
       where: { isActive: true },
+      include: { project: true },
+      orderBy: { fullName: "asc" },
+    })
+  },
+  listByProject(projectId: string) {
+    return prisma.employee.findMany({
+      where: { isActive: true, projectId },
+      orderBy: { fullName: "asc" },
+    })
+  },
+  listUnassigned() {
+    return prisma.employee.findMany({
+      where: { isActive: true, projectId: null },
       orderBy: { fullName: "asc" },
     })
   },
   getById(id: string) {
     return prisma.employee.findUnique({
       where: { id },
-      include: { supplier: true },
+      include: { supplier: true, project: true },
     })
   },
   getByCode(empCode: string) {
@@ -223,24 +278,33 @@ export const appSettingRepository = {
 export const kioskConfigRepository = {
   list() {
     return prisma.kioskConfig.findMany({
+      include: { project: true },
       orderBy: { createdAt: "asc" },
     })
   },
   getActive() {
     return prisma.kioskConfig.findFirst({
       where: { isActive: true },
+      include: { project: true },
       orderBy: { createdAt: "asc" },
     })
   },
   getById(id: string) {
-    return prisma.kioskConfig.findUnique({ where: { id } })
+    return prisma.kioskConfig.findUnique({
+      where: { id },
+      include: { project: true },
+    })
   },
   getBySlug(slug: string) {
-    return prisma.kioskConfig.findUnique({ where: { slug } })
+    return prisma.kioskConfig.findUnique({
+      where: { slug },
+      include: { project: true },
+    })
   },
   getByToken(token: string) {
     return prisma.kioskConfig.findFirst({
       where: { accessToken: token, isActive: true },
+      include: { project: true },
     })
   },
   updateToken(id: string, token: string) {

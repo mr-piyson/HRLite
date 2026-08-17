@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Monitor, CheckCircle2, Copy, ExternalLink, Eye, EyeOff } from "lucide-react";
 
@@ -67,9 +68,11 @@ function CreateKioskDialog() {
   const [deviceName, setDeviceName] = useState("");
   const [location, setLocation] = useState("");
   const [adminPin, setAdminPin] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
   const { data: settings } = trpc.general.get.useQuery();
+  const { data: projects } = trpc.project.listActive.useQuery();
   const createMutation = trpc.settings.create.useMutation({
     onSuccess: (result) => {
       utils.settings.list.invalidate();
@@ -100,6 +103,7 @@ function CreateKioskDialog() {
       pinEnabled: false,
       faceRecognitionEnabled: false,
       fingerprintEnabled: false,
+      projectId,
       workdayStart: settings?.defaultWorkdayStart ?? "09:00",
       lateGraceMinutes: 15,
       standardWorkMinutes: 480,
@@ -163,6 +167,28 @@ function CreateKioskDialog() {
               className="font-mono"
             />
             <p className="text-xs text-muted-foreground">Optional. Used to access the admin drawer on the kiosk.</p>
+          </div>
+          <div className="space-y-1">
+            <Label>Project (Optional)</Label>
+            <Select
+              value={projectId ?? "none"}
+              onValueChange={(v: string | null) => setProjectId(v === "none" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Project (Unassigned Employees)</SelectItem>
+                {projects?.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              If set, only employees of this project will use this kiosk.
+            </p>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -232,7 +258,9 @@ export default function KioskConfigPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{c.location ?? "No location"}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {c.project?.name ?? c.location ?? "No location"}
+                      </p>
                       <div className="mt-1 flex items-center gap-1">
                         <code className="text-[10px] text-muted-foreground/60 truncate">/kiosk/{c.slug}</code>
                         {c.slug && <CopyButton text={getKioskUrl(c.slug)} />}

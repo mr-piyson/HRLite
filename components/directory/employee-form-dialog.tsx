@@ -17,7 +17,7 @@ export function EmployeeFormDialog() {
   const [fullName, setFullName] = useState("");
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
-  const [project, setProject] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [contactNo, setContactNo] = useState("");
   const [hourRate, setHourRate] = useState("0");
   const [supplierId, setSupplierId] = useState<string | null>(null);
@@ -28,6 +28,7 @@ export function EmployeeFormDialog() {
 
   const utils = trpc.useUtils();
   const { data: suppliers } = trpc.supplier.list.useQuery();
+  const { data: projects } = trpc.project.listActive.useQuery();
   const { data: settings } = trpc.general.get.useQuery();
   const directLabel = settings?.companyName ?? "Direct Employee";
 
@@ -54,7 +55,7 @@ export function EmployeeFormDialog() {
     setFullName("");
     setDesignation("");
     setDepartment("");
-    setProject("");
+    setProjectId(null);
     setContactNo("");
     setHourRate("0");
     setSupplierId(null);
@@ -71,7 +72,7 @@ export function EmployeeFormDialog() {
       fullName,
       designation: designation || undefined,
       department: department || undefined,
-      project: project || undefined,
+      projectId: projectId || undefined,
       contactNo: contactNo || undefined,
       hourRate: parseFloat(hourRate) || 0,
       currency,
@@ -127,8 +128,23 @@ export function EmployeeFormDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="project">Project</Label>
-              <Input id="project" value={project} onChange={(e) => setProject(e.target.value)} />
+              <Label>Project</Label>
+              <Select
+                value={projectId ?? "none"}
+                onValueChange={(v: string | null) => setProjectId(v === "none" ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Unassigned)</SelectItem>
+                  {projects?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label htmlFor="contactNo">Contact No.</Label>
