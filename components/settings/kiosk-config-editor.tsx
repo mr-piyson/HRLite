@@ -62,6 +62,10 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
   const { data: projects } = trpc.project.listActive.useQuery()
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
 
+  const selectedProjectName = projectId && projectId !== "none"
+    ? projects?.find((p) => p.id === projectId)?.name
+    : null
+
   const updateMutation = trpc.settings.update.useMutation({
     onSuccess: () => {
       utils.settings.list.invalidate()
@@ -131,7 +135,6 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
       },
     })
   }
-
   return (
     <>
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -199,22 +202,30 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
               Optionally link this kiosk to a project. If set, only that project&apos;s employees will be shown.
               If not set, only employees with no project assignment will be shown.
             </p>
-            <Select
-              value={projectId ?? "none"}
-              onValueChange={(v: string | null) => setProjectId(v === "none" ? null : v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Project (Unassigned Employees)</SelectItem>
-                {projects?.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name} ({p._count.employees} employees)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+<Select
+  value={projectId ?? "none"}
+  onValueChange={(v) =>
+    setProjectId(v === "none" ? null : v)
+  }
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select project">
+      {selectedProjectName ?? "No Project (Unassigned Employees)"}
+    </SelectValue>
+  </SelectTrigger>
+
+  <SelectContent>
+    <SelectItem value="none">
+      No Project (Unassigned Employees)
+    </SelectItem>
+
+    {projects?.map((p) => (
+      <SelectItem key={p.id} value={p.id}>
+        {p.name} ({p._count.employees} employees)
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
           </div>
         </CardContent>
       </Card>
