@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boundary Engine — Cross-Midnight Attendance Resolution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161a;
+    --bg-raised:#181d23;
+    --panel:#1d232b;
+    --panel-2:#232a33;
+    --line:#2a323c;
+    --line-soft:#232a32;
+    --text:#e9e6df;
+    --muted:#8b93a0;
+    --muted-2:#5f6874;
+    --amber:#f2a93b;
+    --amber-dim:#7a5a24;
+    --green:#3ecf8e;
+    --green-dim:#1e4633;
+    --red:#e4572e;
+    --red-dim:#4a2318;
+    --blue:#5b8def;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.015) 0px, transparent 1px) 0 0/100% 24px,
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:0 0 80px 0;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* ===== HEADER ===== */
+  header{
+    border-bottom:1px solid var(--line);
+    padding:28px 0 22px 0;
+    margin-bottom:36px;
+  }
+  .header-row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:18px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:38px;height:38px;border:1px solid var(--amber);border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--amber);
+    position:relative;
+  }
+  .brand-mark::after{
+    content:"";position:absolute;top:6px;left:50%;width:1px;height:8px;background:var(--amber);
+    transform-origin:bottom;animation:tick 4s linear infinite;
+  }
+  @keyframes tick{ 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  h1{
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:22px;letter-spacing:-0.01em;margin:0;
+  }
+  .subtitle{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:3px;letter-spacing:0.02em;}
+  .clock{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);
+    text-align:right;line-height:1.6;
+  }
+  .clock b{color:var(--amber);font-weight:500;}
+
+  section.block{margin-bottom:44px;}
+  .block-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px;justify-content:space-between;flex-wrap:wrap;}
+  .block-head-left{display:flex;align-items:baseline;gap:10px;}
+  .block-num{font-family:'IBM Plex Mono',monospace;color:var(--amber-dim);font-size:12px;}
+  .block-title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;letter-spacing:0.01em;}
+  .block-desc{font-size:12.5px;color:var(--muted);margin:-8px 0 18px 0;max-width:660px;line-height:1.55;}
+
+  /* ===== FORM GRID ===== */
+  .panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;
+  }
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 18px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:0.06em;
+  }
+  .field input, .field select{
+    background:var(--bg-raised);border:1px solid var(--line);color:var(--text);
+    font-family:'IBM Plex Mono',monospace;font-size:13px;
+    padding:9px 10px;border-radius:2px;outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus, .field select:focus{border-color:var(--amber);}
+  .field .hint{font-size:10.5px;color:var(--muted-2);}
+
+  .divider-label{
+    grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--amber);
+    letter-spacing:0.08em;text-transform:uppercase;margin-top:6px;padding-top:12px;border-top:1px dashed var(--line);
+  }
+  .divider-label:first-child{border-top:none;padding-top:0;margin-top:0;}
+  .divider-label .mini-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted);
+    background:transparent;border:1px solid var(--line);padding:3px 8px;border-radius:2px;cursor:pointer;
+    text-transform:none;letter-spacing:0.02em;
+  }
+  .divider-label .mini-btn:hover{color:var(--amber);border-color:var(--amber-dim);}
+
+  /* ===== PUNCH LOG ===== */
+  .punch-list-head{
+    display:grid;grid-template-columns:1fr 110px 40px;gap:10px;
+    font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted-2);
+    text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;
+  }
+  .punch-item{display:grid;grid-template-columns:1fr 110px 40px;gap:10px;align-items:center;margin-bottom:8px;}
+  .punch-item input[type=datetime-local]{width:100%;}
+  .btn{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;
+    padding:9px 16px;border-radius:2px;border:1px solid var(--line);
+    background:var(--panel-2);color:var(--text);cursor:pointer;
+    transition:border-color .15s, color .15s;
+    text-transform:uppercase;
+  }
+  .btn:hover{border-color:var(--muted);}
+  .btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1305;font-weight:600;}
+  .btn.primary:hover{background:#f5b654;}
+  .btn.ghost{background:transparent;color:var(--muted);border-color:var(--line);}
+  .btn.small{padding:6px 10px;font-size:10.5px;}
+  .btn.danger-ghost{color:var(--red);border-color:var(--red-dim);}
+
+  .actions-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center;}
+
+  /* ===== TIMELINE ===== */
+  .timeline-wrap{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 24px 14px 24px;overflow-x:auto;position:relative;
+    transition:border-color .2s;
+  }
+  .timeline-wrap.dragging{border-color:var(--amber-dim);}
+  .live-badge{
+    position:absolute;top:14px;right:20px;
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--amber);border:1px solid var(--amber-dim);padding:3px 8px;border-radius:20px;
+    display:none;align-items:center;gap:6px;
+  }
+  .live-badge.show{display:inline-flex;}
+  .live-badge::before{
+    content:"";width:6px;height:6px;border-radius:50%;background:var(--amber);
+    animation:pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  svg{display:block;font-family:'IBM Plex Mono',monospace;width:100%;height:auto;min-width:640px;}
+  .axis-label{fill:var(--muted-2);font-size:9.5px;}
+  .window-label{fill:var(--muted);font-size:10px;letter-spacing:0.02em;}
+  .offset-label{fill:var(--muted-2);font-size:9px;letter-spacing:0.02em;}
+
+  .win-body{cursor:grab;}
+  .win-body:active{cursor:grabbing;}
+  .win-handle{cursor:ew-resize;}
+  .punch-hit{cursor:grab;}
+  .punch-hit:active{cursor:grabbing;}
+  .win-body:focus, .win-handle:focus, .punch-hit:focus{outline:1.5px dashed var(--amber);outline-offset:2px;}
+
+  .legend-row{
+    display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);
+    font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted-2);
+  }
+  .legend-row span{display:flex;align-items:center;gap:6px;}
+  .legend-swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
+
+  .drag-tooltip{
+    position:fixed;z-index:50;pointer-events:none;
+    background:var(--panel-2);border:1px solid var(--amber-dim);color:var(--amber);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 9px;border-radius:2px;
+    white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.4);
+    display:none;
+  }
+
+  /* ===== RESULTS ===== */
+  .results-grid{display:grid;grid-template-columns:220px 1fr;gap:24px;margin-top:22px;}
+  .status-card{
+    border:1px solid var(--line);border-radius:var(--radius);padding:22px;
+    display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:6px;
+    background:var(--panel);transition:border-color .3s;
+  }
+  .status-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+  .status-value{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;letter-spacing:-0.01em;}
+  .status-value.present{color:var(--green);}
+  .status-value.incomplete{color:var(--amber);}
+  .status-value.absent{color:var(--red);}
+  .status-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:8px;}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .metric{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px 16px;
+    transition:border-color .2s, background .2s;
+  }
+  .metric.pulse{border-color:var(--amber-dim);background:var(--panel-2);}
+  .metric .k{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+  .metric .v{font-family:'IBM Plex Mono',monospace;font-size:17px;color:var(--text);}
+  .metric .v.dim{color:var(--muted-2);}
+
+  .log-table{grid-column:1/-1;margin-top:4px;}
+  table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  th{
+    text-align:left;font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:0.06em;
+    font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line);
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--line-soft);color:var(--text);}
+  tr:last-child td{border-bottom:none;}
+  .pill{
+    display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;letter-spacing:0.03em;
+    text-transform:uppercase;border:1px solid transparent;
+  }
+  .pill.in{background:var(--green-dim);color:var(--green);border-color:#2b5c44;}
+  .pill.out{background:#2a3f5c;color:var(--blue);border-color:#31507a;}
+  .pill.ignored{background:transparent;color:var(--muted-2);border-color:var(--line);}
+  .pill.flagged{background:var(--red-dim);color:#ff8a68;border-color:#6b2f1e;}
+
+  .edge-note{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+    padding:10px 12px;border-left:2px solid var(--amber-dim);background:var(--panel-2);margin-top:14px;
+    line-height:1.6;
+  }
+  .overlap-note{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:#ff8a68;
+    padding:10px 12px;border-left:2px solid var(--red-dim);background:var(--red-dim);margin-top:10px;
+    line-height:1.6;display:none;
+  }
+  .overlap-note.show{display:block;}
+
+  /* ===== EDGE CASE MATRIX ===== */
+  .matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .matrix .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;
+    display:flex;flex-direction:column;gap:8px;transition:border-color .25s, background .25s;
+  }
+  .matrix .card h4{
+    margin:0;font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:600;color:var(--text);
+  }
+  .matrix .card p{margin:0;font-size:11px;color:var(--muted);line-height:1.5;}
+  .matrix .card .out{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--amber);
+    padding-top:8px;border-top:1px dashed var(--line);
+  }
+
+  footer{
+    margin-top:60px;padding-top:20px;border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted-2);
+  }
+
+  @media (max-width:900px){
+    .grid{grid-template-columns:repeat(2,1fr);}
+    .metrics{grid-template-columns:repeat(2,1fr);}
+    .matrix{grid-template-columns:repeat(2,1fr);}
+    .results-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-row">
+      <div class="brand">
+        <div class="brand-mark">IN</div>
+        <div>
+          <h1>Boundary Engine</h1>
+          <div class="subtitle">CROSS-MIDNIGHT SHIFT &amp; ATTENDANCE RESOLUTION — v2.0 · INTERACTIVE TIMELINE</div>
+        </div>
+      </div>
+      <div class="clock">
+        WORK DATE ANCHOR<br>
+        <b id="clockOut">—</b>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= SHIFT CONFIG ================= -->
+  <section class="block">
+    <div class="block-head"><div class="block-head-left"><span class="block-num">01</span><span class="block-title">Shift &amp; Roster Configuration</span></div></div>
+    <div class="block-desc">Define the Work Date and the shift's target boundaries. Window offsets are minutes relative to ShiftStartDateTime (IN) and ShiftEndDateTime (OUT) — or skip the typing and drag the windows directly on the timeline below.</div>
+    <div class="panel">
+      <div class="grid">
+        <div class="divider-label">Roster</div>
+        <div class="field">
+          <label>Work Date (D)</label>
+          <input type="date" id="workDate" value="2026-08-18">
+        </div>
+        <div class="field">
+          <label>Employee Ref</label>
+          <input type="text" id="empRef" value="EMP-00417" placeholder="EMP-XXXXX">
+        </div>
+        <div class="field">
+          <label>Shift Code</label>
+          <input type="text" id="shiftCode" value="NGT-2200" placeholder="e.g. NGT-2200">
+        </div>
+        <div class="field">
+          <label>Break Allocation (min)</label>
+          <input type="number" id="breakMin" value="45" min="0">
+        </div>
+
+        <div class="divider-label">Shift Target</div>
+        <div class="field">
+          <label>Shift Start Time</label>
+          <input type="time" id="shiftStart" value="22:00">
+        </div>
+        <div class="field">
+          <label>Shift Duration (min)</label>
+          <input type="number" id="shiftDuration" value="480" min="1">
+          <span class="hint">480 min = 8h target</span>
+        </div>
+        <div class="field"><span></span></div>
+        <div class="field"><span></span></div>
+
+        <div class="divider-label">
+          <span>IN Window Offset (min, relative to ShiftStartDateTime)</span>
+          <button type="button" class="mini-btn" id="swapWindows">⇄ Swap IN / OUT offsets</button>
+        </div>
+        <div class="field">
+          <label>Start Offset</label>
+          <input type="number" id="inStart" value="-240">
+        </div>
+        <div class="field">
+          <label>End Offset</label>
+          <input type="number" id="inEnd" value="180">
+        </div>
+        <div class="field"><span></span></div>
+        <div class="field"><span></span></div>
+
+        <div class="divider-label">OUT Window Offset (min, relative to ShiftEndDateTime)</div>
+        <div class="field">
+          <label>Start Offset</label>
+          <input type="number" id="outStart" value="-180">
+        </div>
+        <div class="field">
+          <label>End Offset</label>
+          <input type="number" id="outEnd" value="240">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RAW LOGS ================= -->
+  <section class="block">
+    <div class="block-head"><div class="block-head-left"><span class="block-num">02</span><span class="block-title">Raw Attendance Log</span></div></div>
+    <div class="block-desc">Add every raw punch captured by the device — including break scans and duplicate biometric reads. The engine performs split-punch filtering automatically; you do not need to pre-clean this list. Punches can also be dragged directly on the timeline once rendered.</div>
+    <div class="panel">
+      <div class="punch-list-head"><span>Timestamp</span><span>Source</span><span></span></div>
+      <div id="punchList"></div>
+      <div class="actions-row">
+        <button class="btn" id="addPunch" type="button">+ Add Punch</button>
+        <button class="btn ghost" id="loadExample" type="button">Load Night-Shift Example</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="actions-row" style="margin-bottom:44px;">
+    <button class="btn primary" id="runEngine" type="button">Run Resolution Engine →</button>
+  </div>
+
+  <!-- ================= TIMELINE ================= -->
+  <section class="block" id="timelineSection" style="display:none;">
+    <div class="block-head">
+      <div class="block-head-left"><span class="block-num">03</span><span class="block-title">Boundary Window Visualization</span></div>
+    </div>
+    <div class="block-desc">Drag a window block to shift both its edges together, or drag a single edge handle to resize just that boundary. Drag a punch marker to retime it. Every change commits live to the fields above.</div>
+    <div class="timeline-wrap" id="timelineWrap">
+      <span class="live-badge" id="liveBadge">Live</span>
+      <svg id="timelineSvg" width="100%" height="180" viewBox="0 0 1080 180" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="legend-row">
+        <span><span class="legend-swatch" style="background:var(--green-dim);border:1px solid #2b5c44;"></span> IN_Window — drag body to move, edges to resize</span>
+        <span><span class="legend-swatch" style="background:#1e3350;border:1px solid #31507a;"></span> OUT_Window — drag body to move, edges to resize</span>
+        <span><span class="legend-swatch" style="background:var(--amber);border-radius:50%;"></span> Punch marker — drag to retime</span>
+        <span><span class="legend-swatch" style="background:transparent;border:1px dashed var(--amber);"></span> Target IN / OUT (fixed)</span>
+      </div>
+    </div>
+    <div class="overlap-note" id="overlapNote">⚠ IN_Window and OUT_Window currently overlap — a single punch inside the overlap may satisfy both boundaries. See Section 6 tie-breaking rules: the earlier shift claims it as lastOutTime, the following shift claims it as firstInTime.</div>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section class="block" id="resultsSection" style="display:none;">
+    <div class="block-head"><div class="block-head-left"><span class="block-num">04</span><span class="block-title">Resolution Output</span></div></div>
+    <div class="results-grid">
+      <div class="status-card" id="statusCard">
+        <span class="status-label">Attendance Status</span>
+        <span class="status-value" id="statusValue">—</span>
+        <span class="status-sub" id="statusSub"></span>
+      </div>
+      <div class="metrics">
+        <div class="metric" id="mFirstInCard"><div class="k">First IN</div><div class="v" id="mFirstIn">—</div></div>
+        <div class="metric" id="mLastOutCard"><div class="k">Last OUT</div><div class="v" id="mLastOut">—</div></div>
+        <div class="metric" id="mGrossCard"><div class="k">Gross Hours</div><div class="v" id="mGross">—</div></div>
+        <div class="metric" id="mNetCard"><div class="k">Net Hours</div><div class="v" id="mNet">—</div></div>
+      </div>
+      <div class="log-table">
+        <table>
+          <thead><tr><th>Punch Timestamp</th><th>Classification</th><th>Window</th><th>Note</th></tr></thead>
+          <tbody id="logTableBody"></tbody>
+        </table>
+      </div>
+      <div class="edge-note" id="edgeNote" style="display:none;"></div>
+    </div>
+  </section>
+
+  <!-- ================= EDGE CASE MATRIX (reference, static) ================= -->
+  <section class="block">
+    <div class="block-head"><div class="block-head-left"><span class="block-num">05</span><span class="block-title">Edge Case Reference Matrix</span></div></div>
+    <div class="block-desc">The engine's fixed handling for the four documented boundary anomalies. Highlighted cards indicate which case(s) the current log triggered.</div>
+    <div class="matrix" id="edgeMatrix">
+      <div class="card" data-case="midshift">
+        <h4>Mid-Shift Break Scans</h4>
+        <p>Logs between IN_Window.end and OUT_Window.start are ignored — only absolute MIN(IN) and MAX(OUT) are recorded.</p>
+        <div class="out">→ Filtered, no status impact</div>
+      </div>
+      <div class="card" data-case="singlepunch">
+        <h4>Single Punch (Forgot Clock-Out)</h4>
+        <p>Only firstInTime matched; no valid lastOutTime found in OUT_Window.</p>
+        <div class="out">→ INCOMPLETE, netHours = 0</div>
+      </div>
+      <div class="card" data-case="early">
+        <h4>Early Clock-In Outside Window</h4>
+        <p>Punch occurs before inWindowStartOffset.</p>
+        <div class="out">→ Ignored by engine, flagged for manual review</div>
+      </div>
+      <div class="card" data-case="overrun">
+        <h4>Shift Overrun (Extended OT)</h4>
+        <p>Clock-out exceeds outWindowEndOffset.</p>
+        <div class="out">→ INCOMPLETE until manager override</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    BOUNDARY ENGINE / SECTIONS 1, 3–7 IMPLEMENTED CLIENT-SIDE · TIMELINE IS FULLY DRAG-EDITABLE · ALL COMPUTATION RUNS LOCALLY, NO DATA LEAVES THIS PAGE
+  </footer>
+</div>
+
+<div class="drag-tooltip" id="dragTooltip"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function fmtDT(d){
+    if(!d) return '—';
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function toLocalInputVal(d){
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function snap(v, step){ return Math.round(v/step)*step; }
+  function fmtOffset(m){
+    m = Math.round(m);
+    return (m>=0?'+':'') + m + ' min';
+  }
+
+  // ---------- Punch list management ----------
+  function addPunchRow(dt, source){
+    const row = document.createElement('div');
+    row.className = 'punch-item';
+    row.innerHTML = `
+      <input type="datetime-local" value="${dt || ''}">
+      <select>
+        <option value="Biometric" ${source==='Biometric'?'selected':''}>Biometric</option>
+        <option value="Badge" ${source==='Badge'?'selected':''}>Badge Swipe</option>
+        <option value="Mobile" ${source==='Mobile'?'selected':''}>Mobile GPS</option>
+        <option value="Manual" ${source==='Manual'?'selected':''}>Manual Entry</option>
+      </select>
+      <button class="btn small danger-ghost" type="button" title="Remove">✕</button>
+    `;
+    row.querySelector('button').addEventListener('click', ()=> { row.remove(); runEngine(); });
+    $('punchList').appendChild(row);
+  }
+
+  $('addPunch').addEventListener('click', ()=> { addPunchRow('', 'Biometric'); });
+
+  function loadExample(){
+    $('punchList').innerHTML = '';
+    $('workDate').value = '2026-08-18';
+    $('shiftStart').value = '22:00';
+    $('shiftDuration').value = 480;
+    $('inStart').value = -240; $('inEnd').value = 180;
+    $('outStart').value = -180; $('outEnd').value = 240;
+    $('breakMin').value = 45;
+    const examples = [
+      ['2026-08-18T18:42','Badge'],
+      ['2026-08-18T21:58','Biometric'],
+      ['2026-08-19T02:15','Mobile'],
+      ['2026-08-19T06:05','Biometric'],
+      ['2026-08-19T06:41','Badge'],
+    ];
+    examples.forEach(([dt,src]) => addPunchRow(dt, src));
+  }
+  $('loadExample').addEventListener('click', ()=>{ loadExample(); runEngine(); });
+  loadExample();
+
+  $('swapWindows').addEventListener('click', ()=>{
+    const a = [$('inStart').value, $('inEnd').value];
+    const b = [$('outStart').value, $('outEnd').value];
+    $('inStart').value = b[0]; $('inEnd').value = b[1];
+    $('outStart').value = a[0]; $('outEnd').value = a[1];
+    runEngine();
+  });
+
+  function updateAnchorReadout(){
+    const wd = $('workDate').value;
+    const st = $('shiftStart').value;
+    $('clockOut').textContent = wd && st ? (wd+' '+st+' TARGET-IN') : '—';
+  }
+  ['workDate','shiftStart','shiftDuration','inStart','inEnd','outStart','outEnd','breakMin'].forEach(id=>{
+    $(id).addEventListener('change', ()=>{ updateAnchorReadout(); runEngine(); });
+  });
+  updateAnchorReadout();
+
+  // ---------- Core engine ----------
+  function combine(dateStr, timeStr){
+    const [y,m,d] = dateStr.split('-').map(Number);
+    const [hh,mm] = timeStr.split(':').map(Number);
+    return new Date(y, m-1, d, hh, mm, 0, 0);
+  }
+  function addMinutes(date, mins){
+    return new Date(date.getTime() + mins*60000);
+  }
+
+  function runEngine(){
+    const D = $('workDate').value;
+    const shiftStartTime = $('shiftStart').value;
+    const duration = Number($('shiftDuration').value);
+    const inStartOff = Number($('inStart').value);
+    const inEndOff = Number($('inEnd').value);
+    const outStartOff = Number($('outStart').value);
+    const outEndOff = Number($('outEnd').value);
+    const breakMin = Number($('breakMin').value);
+
+    const ShiftStartDateTime = combine(D, shiftStartTime);
+    const ShiftEndDateTime = addMinutes(ShiftStartDateTime, duration);
+
+    const IN_Window = [addMinutes(ShiftStartDateTime, inStartOff), addMinutes(ShiftStartDateTime, inEndOff)];
+    const OUT_Window = [addMinutes(ShiftEndDateTime, outStartOff), addMinutes(ShiftEndDateTime, outEndOff)];
+
+    const rows = Array.from(document.querySelectorAll('#punchList .punch-item'));
+    const punches = rows.map(r => {
+      const inputEl = r.querySelector('input[type=datetime-local]');
+      const src = r.querySelector('select').value;
+      const val = inputEl.value;
+      if(!val) return null;
+      const dt = new Date(val);
+      return {dt, src, input: inputEl};
+    }).filter(Boolean).sort((a,b)=> a.dt - b.dt);
+
+    let inCandidates = [];
+    let outCandidates = [];
+    const classified = punches.map(p => {
+      let cls, windowLabel, note = '';
+      if(p.dt >= IN_Window[0] && p.dt <= IN_Window[1]){
+        cls = 'IN'; windowLabel = 'IN_Window'; inCandidates.push(p);
+      } else if(p.dt >= OUT_Window[0] && p.dt <= OUT_Window[1]){
+        cls = 'OUT'; windowLabel = 'OUT_Window'; outCandidates.push(p);
+      } else if(p.dt > IN_Window[1] && p.dt < OUT_Window[0]){
+        cls = 'IGNORED'; windowLabel = 'Mid-shift'; note = 'Split-punch filtered (break/duplicate scan)';
+      } else if(p.dt < IN_Window[0]){
+        cls = 'FLAGGED'; windowLabel = 'Before IN_Window'; note = 'Early clock-in outside window — flagged for manager review';
+      } else {
+        cls = 'FLAGGED'; windowLabel = 'After OUT_Window'; note = 'Beyond outWindowEndOffset — shift overrun, needs override';
+      }
+      return {...p, cls, windowLabel, note};
+    });
+
+    const firstInTime = inCandidates.length ? new Date(Math.min(...inCandidates.map(p=>p.dt.getTime()))) : null;
+    const lastOutTime = outCandidates.length ? new Date(Math.max(...outCandidates.map(p=>p.dt.getTime()))) : null;
+
+    let grossHours = null, netHours = null;
+    if(firstInTime && lastOutTime){
+      grossHours = (lastOutTime - firstInTime) / 3600000;
+      netHours = Math.max(0, grossHours - breakMin/60);
+    }
+
+    let status, statusClass, sub;
+    const anyMatch = inCandidates.length || outCandidates.length;
+    if(firstInTime && lastOutTime){
+      status = 'PRESENT'; statusClass = 'present'; sub = 'Both boundaries resolved';
+    } else if(!anyMatch){
+      status = 'ABSENT'; statusClass = 'absent'; sub = 'No logs matched IN_Window or OUT_Window';
+    } else {
+      status = 'INCOMPLETE'; statusClass = 'incomplete';
+      sub = firstInTime ? 'Missing lastOutTime — no valid OUT punch' : 'Missing firstInTime — no valid IN punch';
+    }
+
+    const triggeredCases = new Set();
+    if(classified.some(c=>c.cls==='IGNORED')) triggeredCases.add('midshift');
+    if(status==='INCOMPLETE' && firstInTime && !lastOutTime) triggeredCases.add('singlepunch');
+    if(classified.some(c=>c.windowLabel==='Before IN_Window')) triggeredCases.add('early');
+    if(classified.some(c=>c.windowLabel==='After OUT_Window')) triggeredCases.add('overrun');
+
+    const overlap = IN_Window[1] > OUT_Window[0];
+
+    render({ShiftStartDateTime, ShiftEndDateTime, IN_Window, OUT_Window, classified, firstInTime, lastOutTime, grossHours, netHours, status, statusClass, sub, triggeredCases, overlap,
+      offsets:{inStartOff, inEndOff, outStartOff, outEndOff}});
+  }
+
+  let lastMetrics = {};
+  function render(r){
+    $('timelineSection').style.display = 'block';
+    $('resultsSection').style.display = 'block';
+
+    const sv = $('statusValue');
+    sv.textContent = r.status;
+    sv.className = 'status-value ' + r.statusClass;
+    $('statusSub').textContent = r.sub;
+
+    function flashIfChanged(id, cardId, newVal){
+      const el = $(id), card = $(cardId);
+      if(lastMetrics[id] !== undefined && lastMetrics[id] !== newVal){
+        card.classList.add('pulse');
+        setTimeout(()=>card.classList.remove('pulse'), 500);
+      }
+      lastMetrics[id] = newVal;
+      el.textContent = newVal;
+    }
+
+    flashIfChanged('mFirstIn','mFirstInCard', r.firstInTime ? fmtDT(r.firstInTime) : '— unresolved');
+    $('mFirstIn').className = 'v' + (r.firstInTime?'':' dim');
+    flashIfChanged('mLastOut','mLastOutCard', r.lastOutTime ? fmtDT(r.lastOutTime) : '— unresolved');
+    $('mLastOut').className = 'v' + (r.lastOutTime?'':' dim');
+    flashIfChanged('mGross','mGrossCard', r.grossHours!==null ? r.grossHours.toFixed(2)+' h' : '—');
+    $('mGross').className = 'v' + (r.grossHours!==null?'':' dim');
+    flashIfChanged('mNet','mNetCard', r.netHours!==null ? r.netHours.toFixed(2)+' h' : '—');
+    $('mNet').className = 'v' + (r.netHours!==null?'':' dim');
+
+    const tbody = $('logTableBody');
+    tbody.innerHTML = '';
+    r.classified.forEach(c => {
+      const tr = document.createElement('tr');
+      const pillClass = c.cls==='IN' ? 'in' : c.cls==='OUT' ? 'out' : c.cls==='IGNORED' ? 'ignored' : 'flagged';
+      const pillText = c.cls==='IN' ? 'IN candidate' : c.cls==='OUT' ? 'OUT candidate' : c.cls==='IGNORED' ? 'Filtered' : 'Flagged';
+      tr.innerHTML = `
+        <td>${fmtDT(c.dt)} <span style="color:var(--muted-2)">· ${c.src}</span></td>
+        <td><span class="pill ${pillClass}">${pillText}</span></td>
+        <td>${c.windowLabel}</td>
+        <td style="color:var(--muted);font-size:11px;">${c.note||''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const note = $('edgeNote');
+    if(r.triggeredCases.size){
+      const labels = {
+        midshift:'Mid-Shift Break Scans', singlepunch:'Single Punch (Forgot Clock-Out)',
+        early:'Early Clock-In Outside Window', overrun:'Shift Overrun (Extended OT)'
+      };
+      note.style.display = 'block';
+      note.textContent = '⚑ Edge case(s) triggered — ' + Array.from(r.triggeredCases).map(k=>labels[k]).join(', ');
+    } else {
+      note.style.display = 'none';
+    }
+
+    $('overlapNote').classList.toggle('show', r.overlap);
+
+    document.querySelectorAll('#edgeMatrix .card').forEach(card=>{
+      const key = card.getAttribute('data-case');
+      if(r.triggeredCases.has(key)){
+        card.style.borderColor = 'var(--amber)';
+        card.style.background = 'var(--panel-2)';
+      } else {
+        card.style.borderColor = 'var(--line)';
+        card.style.background = 'var(--panel)';
+      }
+    });
+
+    drawTimeline(r);
+  }
+
+  // ---------- Timeline drawing + drag interaction ----------
+  let viewState = {};
+  const tooltip = $('dragTooltip');
+  function showTooltip(x,y,text){
+    tooltip.style.display='block';
+    tooltip.style.left=(x+14)+'px';
+    tooltip.style.top=(y-30)+'px';
+    tooltip.textContent=text;
+  }
+  function hideTooltip(){ tooltip.style.display='none'; }
+  function setDragging(on){
+    $('timelineWrap').classList.toggle('dragging', on);
+    $('liveBadge').classList.toggle('show', on);
+  }
+
+  function timeToX(t){
+    return viewState.marginL + (t - viewState.rangeMin) / (viewState.rangeMax - viewState.rangeMin) * viewState.usable;
+  }
+
+  function el(tag, attrs){
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for(const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function drawTimeline(r){
+    const svg = $('timelineSvg');
+    const W = 1080, H = 180;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = '';
+
+    const allTimes = [r.IN_Window[0], r.IN_Window[1], r.OUT_Window[0], r.OUT_Window[1], r.ShiftStartDateTime, r.ShiftEndDateTime, ...r.classified.map(c=>c.dt)];
+    const minT = Math.min(...allTimes.map(d=>d.getTime()));
+    const maxT = Math.max(...allTimes.map(d=>d.getTime()));
+    const pd = (maxT-minT) * 0.08 || 3600000;
+    const rangeMin = minT - pd, rangeMax = maxT + pd;
+    const marginL = 20, marginR = 20;
+    const usable = W - marginL - marginR;
+
+    viewState = {rangeMin, rangeMax, marginL, usable, W, H, ShiftStartDateTime: r.ShiftStartDateTime, ShiftEndDateTime: r.ShiftEndDateTime};
+
+    function pad2(n){return String(n).padStart(2,'0');}
+
+    svg.appendChild(el('line', {x1:marginL,y1:150,x2:W-marginR,y2:150,stroke:'var(--line)','stroke-width':1}));
+
+    const tickStart = Math.ceil(rangeMin/3600000)*3600000;
+    for(let t=tickStart; t<=rangeMax; t+=3600000*2){
+      const xx = timeToX(t);
+      svg.appendChild(el('line',{x1:xx,y1:146,x2:xx,y2:154,stroke:'var(--muted-2)','stroke-width':1}));
+      const d = new Date(t);
+      const label = el('text',{x:xx,y:168,'text-anchor':'middle',class:'axis-label'});
+      label.textContent = pad2(d.getHours())+':'+pad2(d.getMinutes());
+      svg.appendChild(label);
+    }
+
+    // ---- target dashed markers (fixed reference lines) ----
+    [ r.ShiftStartDateTime, r.ShiftEndDateTime ].forEach((d)=>{
+      const xx = timeToX(d.getTime());
+      svg.appendChild(el('line',{x1:xx,y1:50,x2:xx,y2:150,stroke:'var(--amber-dim)','stroke-width':1,'stroke-dasharray':'2,3'}));
+    });
+
+    // ---- IN window ----
+    buildWindow(svg, r, 'IN', r.IN_Window[0], r.IN_Window[1], 50, 22, 'var(--green-dim)', '#2b5c44', 'var(--green)', r.offsets.inStartOff, r.offsets.inEndOff);
+    // ---- OUT window ----
+    buildWindow(svg, r, 'OUT', r.OUT_Window[0], r.OUT_Window[1], 50, 22, '#1e3350', '#31507a', 'var(--blue)', r.offsets.outStartOff, r.offsets.outEndOff);
+
+    // mid-shift gap label
+    const midX1 = timeToX(r.IN_Window[1].getTime()), midX2 = timeToX(r.OUT_Window[0].getTime());
+    if(midX2 > midX1 + 30){
+      const midLbl = el('text',{x:(midX1+midX2)/2,y:80,'text-anchor':'middle',class:'axis-label'});
+      midLbl.textContent = 'mid-shift (filtered)';
+      svg.appendChild(midLbl);
+    }
+
+    // resolved connector
+    if(r.firstInTime && r.lastOutTime){
+      const x1 = timeToX(r.firstInTime.getTime()), x2 = timeToX(r.lastOutTime.getTime());
+      svg.appendChild(el('line',{x1:x1,y1:95,x2:x2,y2:95,stroke:'var(--amber)','stroke-width':1.5,'stroke-dasharray':'1,3'}));
+    }
+
+    // ---- punch markers (draggable) ----
+    r.classified.forEach((c, idx) => {
+      const xx = timeToX(c.dt.getTime());
+      const color = c.cls==='IN' ? 'var(--green)' : c.cls==='OUT' ? 'var(--blue)' : c.cls==='IGNORED' ? 'var(--muted-2)' : 'var(--red)';
+      const isResolved = (c.cls==='IN' && r.firstInTime && c.dt.getTime()===r.firstInTime.getTime()) ||
+                          (c.cls==='OUT' && r.lastOutTime && c.dt.getTime()===r.lastOutTime.getTime());
+      const line = el('line',{x1:xx,y1:95,x2:xx,y2:150,stroke:color,'stroke-width':isResolved?2:1,'stroke-dasharray':isResolved?'none':'3,2'});
+      svg.appendChild(line);
+      const circle = el('circle',{cx:xx,cy:95,r:isResolved?5:3.5,fill: isResolved?color:'var(--bg)',stroke:color,'stroke-width':1.5});
+      svg.appendChild(circle);
+      // wider invisible hit target for easier grabbing
+      const hit = el('circle',{cx:xx,cy:95,r:10,fill:'transparent',class:'punch-hit',tabindex:'0','aria-label':'Punch at '+fmtDT(c.dt)+', drag or use arrow keys to retime'});
+      svg.appendChild(hit);
+      attachPunchDrag(hit, line, circle, c);
+    });
+  }
+
+  function buildWindow(svg, r, key, startT, endT, y, h, fill, stroke, labelColor, startOff, endOff){
+    const x1 = timeToX(startT.getTime()), x2 = timeToX(endT.getTime());
+    const g = el('g',{});
+    const rect = el('rect',{x:x1,y:y,width:Math.max(2,x2-x1),height:h,fill:fill,stroke:stroke,'stroke-width':1,rx:2,class:'win-body',tabindex:'0','aria-label':key+'_Window, drag to move, arrow keys to nudge'});
+    const label = el('text',{x:(x1+x2)/2,y:y-6,'text-anchor':'middle',class:'window-label'});
+    label.textContent = key+'_Window';
+    label.style.fill = labelColor;
+    const offLabel = el('text',{x:(x1+x2)/2,y:y+h+13,'text-anchor':'middle',class:'offset-label'});
+    offLabel.textContent = fmtOffset(startOff)+' → '+fmtOffset(endOff);
+    const leftHandle = el('rect',{x:x1-4,y:y-4,width:8,height:h+8,fill:'transparent',class:'win-handle',tabindex:'0','aria-label':key+' window start edge'});
+    const rightHandle = el('rect',{x:x2-4,y:y-4,width:8,height:h+8,fill:'transparent',class:'win-handle',tabindex:'0','aria-label':key+' window end edge'});
+    const leftTick = el('line',{x1:x1,y1:y-2,x2:x1,y2:y+h+2,stroke:stroke,'stroke-width':2});
+    const rightTick = el('line',{x1:x2,y1:y-2,x2:x2,y2:y+h+2,stroke:stroke,'stroke-width':2});
+
+    g.appendChild(rect); g.appendChild(leftTick); g.appendChild(rightTick);
+    g.appendChild(label); g.appendChild(offLabel);
+    g.appendChild(leftHandle); g.appendChild(rightHandle);
+    svg.appendChild(g);
+
+    attachWindowDrag(rect, leftHandle, rightHandle, label, offLabel, leftTick, rightTick, key, startOff, endOff);
+  }
+
+  function getScale(){
+    const svg = $('timelineSvg');
+    const rect = svg.getBoundingClientRect();
+    return {scale: viewState.W / rect.width, rect};
+  }
+
+  function attachWindowDrag(rect, leftHandle, rightHandle, label, offLabel, leftTick, rightTick, key, initStartOff, initEndOff){
+    function begin(ev, mode){
+      ev.preventDefault();
+      const {scale} = getScale();
+      const startClientX = ev.clientX;
+      const startOffsets = [Number(initStartOff), Number(initEndOff)];
+      const base = key==='IN' ? viewState.ShiftStartDateTime : viewState.ShiftEndDateTime;
+      setDragging(true);
+      let pending = null;
+      const targetEl = ev.target;
+      try{ targetEl.setPointerCapture(ev.pointerId); }catch(e){}
+
+      function apply(newStart, newEnd){
+        const t1 = addMinutes(base, newStart), t2 = addMinutes(base, newEnd);
+        const x1 = timeToX(t1), x2 = timeToX(t2);
+        rect.setAttribute('x', x1); rect.setAttribute('width', Math.max(2, x2-x1));
+        leftHandle.setAttribute('x', x1-4); rightHandle.setAttribute('x', x2-4);
+        leftTick.setAttribute('x1',x1); leftTick.setAttribute('x2',x1);
+        rightTick.setAttribute('x1',x2); rightTick.setAttribute('x2',x2);
+        label.setAttribute('x',(x1+x2)/2);
+        offLabel.setAttribute('x',(x1+x2)/2);
+        offLabel.textContent = fmtOffset(newStart)+' → '+fmtOffset(newEnd);
+      }
+
+      function onMove(mv){
+        const dxClient = mv.clientX - startClientX;
+        const dxView = dxClient * scale;
+        const dxMin = dxView / viewState.usable * (viewState.rangeMax - viewState.rangeMin) / 60000;
+        let newStart = startOffsets[0], newEnd = startOffsets[1];
+        if(mode==='move'){
+          newStart = snap(startOffsets[0] + dxMin, 5);
+          newEnd = snap(startOffsets[1] + dxMin, 5);
+        } else if(mode==='resize-left'){
+          newStart = snap(startOffsets[0] + dxMin, 5);
+          if(newEnd - newStart < 10) newStart = newEnd - 10;
+        } else if(mode==='resize-right'){
+          newEnd = snap(startOffsets[1] + dxMin, 5);
+          if(newEnd - newStart < 10) newEnd = newStart + 10;
+        }
+        apply(newStart, newEnd);
+        showTooltip(mv.clientX, mv.clientY, key+'_Window  '+fmtOffset(newStart)+' → '+fmtOffset(newEnd));
+        pending = {newStart, newEnd};
+      }
+      function onUp(){
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        hideTooltip(); setDragging(false);
+        if(pending){
+          if(key==='IN'){ $('inStart').value = Math.round(pending.newStart); $('inEnd').value = Math.round(pending.newEnd); }
+          else { $('outStart').value = Math.round(pending.newStart); $('outEnd').value = Math.round(pending.newEnd); }
+          runEngine();
+        }
+      }
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    }
+
+    rect.addEventListener('pointerdown', ev => begin(ev,'move'));
+    leftHandle.addEventListener('pointerdown', ev => begin(ev,'resize-left'));
+    rightHandle.addEventListener('pointerdown', ev => begin(ev,'resize-right'));
+
+    // keyboard accessibility: arrow keys nudge by 5 (1 with alt), shift = whole window
+    function keyHandler(mode){
+      return function(ev){
+        if(ev.key!=='ArrowLeft' && ev.key!=='ArrowRight') return;
+        ev.preventDefault();
+        const step = ev.altKey ? 1 : 5;
+        const dir = ev.key==='ArrowLeft' ? -1 : 1;
+        const idField = key==='IN' ? ['inStart','inEnd'] : ['outStart','outEnd'];
+        let s = Number($(idField[0]).value), en = Number($(idField[1]).value);
+        if(mode==='move'){ s+=dir*step; en+=dir*step; }
+        else if(mode==='resize-left'){ s+=dir*step; if(en-s<10) s=en-10; }
+        else if(mode==='resize-right'){ en+=dir*step; if(en-s<10) en=s+10; }
+        $(idField[0]).value = Math.round(s); $(idField[1]).value = Math.round(en);
+        runEngine();
+      };
+    }
+    rect.addEventListener('keydown', keyHandler('move'));
+    leftHandle.addEventListener('keydown', keyHandler('resize-left'));
+    rightHandle.addEventListener('keydown', keyHandler('resize-right'));
+  }
+
+  function attachPunchDrag(hit, line, circle, punch){
+    hit.addEventListener('pointerdown', ev => {
+      ev.preventDefault();
+      const {scale} = getScale();
+      const startClientX = ev.clientX;
+      const startDt = punch.dt;
+      setDragging(true);
+      let pendingDt = null;
+      try{ hit.setPointerCapture(ev.pointerId); }catch(e){}
+
+      function onMove(mv){
+        const dxClient = mv.clientX - startClientX;
+        const dxView = dxClient * scale;
+        const dxMin = dxView / viewState.usable * (viewState.rangeMax - viewState.rangeMin) / 60000;
+        const newDt = addMinutes(startDt, snap(dxMin,1));
+        const xx = timeToX(newDt.getTime());
+        line.setAttribute('x1',xx); line.setAttribute('x2',xx);
+        circle.setAttribute('cx',xx); hit.setAttribute('cx',xx);
+        showTooltip(mv.clientX, mv.clientY, fmtDT(newDt));
+        pendingDt = newDt;
+      }
+      function onUp(){
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        hideTooltip(); setDragging(false);
+        if(pendingDt){
+          punch.input.value = toLocalInputVal(pendingDt);
+          runEngine();
+        }
+      }
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+
+    hit.addEventListener('keydown', ev => {
+      if(ev.key!=='ArrowLeft' && ev.key!=='ArrowRight') return;
+      ev.preventDefault();
+      const step = ev.altKey ? 1 : 15;
+      const dir = ev.key==='ArrowLeft' ? -1 : 1;
+      const newDt = addMinutes(punch.dt, dir*step);
+      punch.input.value = toLocalInputVal(newDt);
+      runEngine();
+    });
+  }
+
+  $('runEngine').addEventListener('click', runEngine);
+  setTimeout(runEngine, 50);
+})();
+</script>
+</body>
+</html>

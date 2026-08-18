@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,6 +57,29 @@ export function KioskConfigEditor({ config, isLoading }: KioskConfigEditorProps)
   const [showAdminPin, setShowAdminPin] = useState(false)
   const [showToken, setShowToken] = useState(false)
   const [showRegenerateAlert, setShowRegenerateAlert] = useState(false)
+
+  useEffect(() => {
+    if (config) {
+      setKioskName(config.kioskName)
+      setDeviceName(config.deviceName ?? "")
+      setLocation(config.location ?? "")
+      setAutoFullscreen(config.autoFullscreen)
+      setAutoResetAfterSuccess(config.autoResetAfterSuccess)
+      setSuccessScreenDuration(config.successScreenDuration)
+      setCameraEnabled(config.cameraEnabled)
+      setQrCodeEnabled(config.qrCodeEnabled)
+      setRfidEnabled(config.rfidEnabled)
+      setPinEnabled(config.pinEnabled)
+      setFaceRecognitionEnabled(config.faceRecognitionEnabled)
+      setFingerprintEnabled(config.fingerprintEnabled)
+      setProjectId(config.projectId)
+      setWorkdayStart(config.workdayStart)
+      setLateGraceMinutes(config.lateGraceMinutes)
+      setStandardWorkMinutes(config.standardWorkMinutes)
+      setHalfDayMinutes(config.halfDayMinutes)
+      setAdminPin(config.adminPin ?? "")
+    }
+  }, [config])
 
   const utils = trpc.useUtils()
   const { data: projects } = trpc.project.listActive.useQuery()
