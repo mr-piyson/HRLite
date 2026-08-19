@@ -34,9 +34,9 @@ export function SupplierTable() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {isLoading ? "Loading..." : `${suppliers?.length ?? 0} supplier companies`}
         </p>
         {isAdmin && <SupplierFormDialog />}
@@ -45,23 +45,23 @@ export function SupplierTable() {
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="text-center">Active</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
+            <TableRow className="h-8">
+              <TableHead className="text-xs">Code</TableHead>
+              <TableHead className="text-xs">Name</TableHead>
+              <TableHead className="text-xs">Contact</TableHead>
+              <TableHead className="text-xs">Phone</TableHead>
+              <TableHead className="text-xs">Email</TableHead>
+              <TableHead className="text-center text-xs">Active</TableHead>
+              <TableHead className="w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading
               ? Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i}>
+                  <TableRow key={i} className="h-9">
                     {Array.from({ length: 7 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <Skeleton className="h-4 w-full" />
+                      <TableCell key={j} className="py-1.5">
+                        <Skeleton className="h-3 w-full" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -69,33 +69,33 @@ export function SupplierTable() {
               : (
                   <>
                     <TableRow
-                      className="cursor-pointer bg-muted/30"
+                      className="cursor-pointer bg-muted/30 h-9"
                       onClick={() => router.push("/suppliers/direct")}
                       tabIndex={0}
                       role="button"
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/suppliers/direct") }}
                     >
-                      <TableCell className="font-mono text-xs">DIRECT</TableCell>
-                      <TableCell className="font-medium">{settings?.companyName ?? "Direct Supplier"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{settings?.companyPhone ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">—</TableCell>
-                      <TableCell className="text-center">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-                          <span className="size-2 rounded-full bg-emerald-500" />
+                      <TableCell className="font-mono text-xs py-1.5">DIRECT</TableCell>
+                      <TableCell className="font-medium text-sm py-1.5">{settings?.companyName ?? "Direct Supplier"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground py-1.5">—</TableCell>
+                      <TableCell className="text-xs text-muted-foreground py-1.5">{settings?.companyPhone ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground py-1.5">—</TableCell>
+                      <TableCell className="text-center py-1.5">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                          <span className="size-1.5 rounded-full bg-emerald-500" />
                           Direct
                         </span>
                       </TableCell>
-                      <TableCell />
+                      <TableCell className="py-1.5" />
                     </TableRow>
                     {suppliers?.map((s) => (
-                      <TableRow key={s.id} className="cursor-pointer" onClick={() => router.push(`/suppliers/${s.id}`)} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/suppliers/${s.id}`) }}>
-                        <TableCell className="font-mono text-xs">{s.supplierCode}</TableCell>
-                        <TableCell className="font-medium">{s.supplierName}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{s.contactPerson ?? "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{s.contactNum1 ?? "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{s.email ?? "—"}</TableCell>
-                        <TableCell className="text-center">
+                      <TableRow key={s.id} className="cursor-pointer h-9" onClick={() => router.push(`/suppliers/${s.id}`)} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push(`/suppliers/${s.id}`) }}>
+                        <TableCell className="font-mono text-xs py-1.5">{s.supplierCode}</TableCell>
+                        <TableCell className="font-medium text-sm py-1.5">{s.supplierName}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-1.5">{s.contactPerson ?? "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-1.5">{s.contactNum1 ?? "—"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground py-1.5">{s.email ?? "—"}</TableCell>
+                        <TableCell className="text-center py-1.5">
                           {isAdmin && (
                             <Switch
                               checked={s.isActive}
@@ -106,12 +106,12 @@ export function SupplierTable() {
                             />
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5">
                           <DropdownMenu>
                             <DropdownMenuTrigger
                               render={
-                                <Button variant="ghost" size="icon" className="size-8">
-                                  <MoreHorizontal className="size-4" />
+                                <Button variant="ghost" size="icon" className="size-7">
+                                  <MoreHorizontal className="size-3.5" />
                                 </Button>
                               }
                               onClick={(e) => e.stopPropagation()}
@@ -123,7 +123,7 @@ export function SupplierTable() {
                                   router.push(`/suppliers/${s.id}`);
                                 }}
                               >
-                                <Eye className="mr-2 size-4" />
+                                <Eye className="mr-2 size-3.5" />
                                 View Details
                               </DropdownMenuItem>
                               {isAdmin && (
@@ -133,7 +133,7 @@ export function SupplierTable() {
                                     router.push(`/suppliers/${s.id}`);
                                   }}
                                 >
-                                  <Edit className="mr-2 size-4" />
+                                  <Edit className="mr-2 size-3.5" />
                                   Edit
                                 </DropdownMenuItem>
                               )}
@@ -146,9 +146,9 @@ export function SupplierTable() {
                                   }}
                                 >
                                   {s.isActive ? (
-                                    <PowerOff className="mr-2 size-4 text-destructive" />
+                                    <PowerOff className="mr-2 size-3.5 text-destructive" />
                                   ) : (
-                                    <Power className="mr-2 size-4 text-emerald-500" />
+                                    <Power className="mr-2 size-3.5 text-emerald-500" />
                                   )}
                                   {s.isActive ? "Deactivate" : "Activate"}
                                 </DropdownMenuItem>
@@ -162,7 +162,7 @@ export function SupplierTable() {
                 )}
             {!isLoading && suppliers?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-6 text-center text-xs text-muted-foreground">
                   No supplier companies found. Add your first supplier.
                 </TableCell>
               </TableRow>
