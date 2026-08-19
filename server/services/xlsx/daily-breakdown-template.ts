@@ -42,7 +42,32 @@ const THIN_BORDER: ExcelJS.Borders = {
   left: { style: "thin" },
   bottom: { style: "thin" },
   right: { style: "thin" },
-  diagonal: { style: "hair" },
+  diagonal: {},
+}
+
+function themeFill(theme: number, tint: number): ExcelJS.Fill {
+  return {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { theme, tint } as never,
+  }
+}
+
+const LIGHT_BLUE_FILL: ExcelJS.Fill = {
+  ...themeFill(9, 0.3999755851924192),
+}
+const LIGHT_DATA_FILL: ExcelJS.Fill = {
+  ...themeFill(9, 0.7999816888943144),
+}
+const RATE_FILL: ExcelJS.Fill = {
+  ...themeFill(7, 0.5999938962981048),
+}
+const TOTAL_HOURS_FILL: ExcelJS.Fill = RATE_FILL
+const TOTAL_ABSENCE_FILL: ExcelJS.Fill = {
+  ...themeFill(5, 0.3999755851924192),
+}
+const DEDUCTION_FILL: ExcelJS.Fill = {
+  ...themeFill(6, 0.5999938962981048),
 }
 
 /** 1-based column index -> Excel column letter (e.g. 27 -> "AA"). */
@@ -83,8 +108,17 @@ export async function buildDailyBreakdownWorkbook(
 
   const wb = new ExcelJS.Workbook()
   const ws = wb.addWorksheet(sheetNameForRange(from, to), {
-    pageSetup: { orientation: "landscape" },
-    views: [{ state: "frozen", ySplit: 2, xSplit: 0, zoomScale: 70 }],
+    pageSetup: {
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+      scale: 38,
+      horizontalDpi: 1200,
+      verticalDpi: 1200,
+      margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
+    },
+    views: [{ state: "frozen", ySplit: 2, xSplit: 0, topLeftCell: "W1", showGridLines: true, zoomScale: 70 }],
   })
 
   // --- Column layout ---------------------------------------------------------
@@ -128,7 +162,8 @@ export async function buildDailyBreakdownWorkbook(
   const titleCell = ws.getCell(1, S_NO)
   titleCell.value = data.title
   titleCell.font = { name: "Calibri", size: 18, bold: true }
-  titleCell.alignment = { horizontal: "center", vertical: "middle" }
+  titleCell.alignment = { vertical: "middle" }
+  titleCell.fill = themeFill(3, 0.7999816888943144)
   titleCell.border = THIN_BORDER
   ws.mergeCells(1, S_NO, 1, NAME)
 
@@ -136,6 +171,7 @@ export async function buildDailyBreakdownWorkbook(
   rangeCell.value = `From ${labelDate(parseDateKey(from))} to ${labelDate(parseDateKey(to))}`
   rangeCell.font = { name: "Calibri", size: 16, bold: true }
   rangeCell.alignment = { horizontal: "left", vertical: "middle" }
+  rangeCell.fill = themeFill(6, 0.7999816888943144)
   rangeCell.border = THIN_BORDER
   ws.mergeCells(1, 5, 1, 9)
 
@@ -148,7 +184,12 @@ export async function buildDailyBreakdownWorkbook(
   for (const [start, end, label, fill] of legend) {
     const cell = ws.getCell(1, start)
     cell.value = label
-    cell.font = { name: "Calibri", size: 14, bold: true, color: { argb: "FF000000" } }
+    cell.font = {
+      name: "Calibri",
+      size: 14,
+      bold: true,
+      color: label === "On Leave" ? { argb: "FFFF0000" } : undefined,
+    }
     cell.alignment = { horizontal: "center", vertical: "middle" }
     cell.border = THIN_BORDER
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } }
@@ -173,7 +214,8 @@ export async function buildDailyBreakdownWorkbook(
     const cell = ws.getCell(2, idx)
     cell.value = label
     cell.font = headerFont
-    cell.alignment = headerAlign
+    cell.alignment = idx === DESIGNATION ? { ...headerAlign, horizontal: "left" } : headerAlign
+    cell.fill = idx === RATE ? RATE_FILL : LIGHT_BLUE_FILL
     cell.border = THIN_BORDER
   }
 
@@ -182,8 +224,9 @@ export async function buildDailyBreakdownWorkbook(
     const cell = ws.getCell(2, firstDateCol + dateColumns.indexOf(key))
     cell.value = d
     cell.numFmt = "d-mmm-yy"
-    cell.font = { name: "Times New Roman", size: 16, bold: true }
-    cell.alignment = { horizontal: "center", vertical: "middle" }
+    cell.font = { name: "Times New Roman", size: 16, bold: true, color: { indexed: 8 } as never }
+    cell.alignment = { horizontal: "center", vertical: "middle", textRotation: 90 }
+    cell.fill = LIGHT_BLUE_FILL
     cell.border = THIN_BORDER
   }
 
@@ -200,6 +243,13 @@ export async function buildDailyBreakdownWorkbook(
     cell.value = label
     cell.font = headerFont
     cell.alignment = headerAlign
+    cell.fill = [TOTAL_HOURS, SALARY].includes(idx)
+      ? RATE_FILL
+      : idx === TOTAL_ABSENCE
+        ? TOTAL_ABSENCE_FILL
+        : idx === DEDUCTION
+          ? DEDUCTION_FILL
+          : LIGHT_BLUE_FILL
     cell.border = THIN_BORDER
   }
 
@@ -223,7 +273,7 @@ export async function buildDailyBreakdownWorkbook(
       [CONTACT, emp.contactNo, centerAlign, numFont],
       [NAME, emp.fullName, leftAlign, dataFont],
       [DESIGNATION, emp.designation, leftAlign, dataFont],
-      [PROJECT, emp.project, leftAlign, dataFont],
+      [PROJECT, emp.project, centerAlign, dataFont],
       [RATE, emp.ratePerHour, centerAlign, { name: "Calibri", size: 14, bold: true }],
     ]
     for (const [col, value, align, font] of staticCells) {
@@ -231,6 +281,7 @@ export async function buildDailyBreakdownWorkbook(
       cell.value = value
       cell.alignment = align
       cell.font = font
+      cell.fill = col === RATE ? RATE_FILL : LIGHT_DATA_FILL
       cell.border = THIN_BORDER
     }
 
@@ -247,6 +298,8 @@ export async function buildDailyBreakdownWorkbook(
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } }
       } else if (hours === 0) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL.absence } }
+      } else {
+        cell.fill = LIGHT_DATA_FILL
       }
     }
 
@@ -255,6 +308,7 @@ export async function buildDailyBreakdownWorkbook(
     totalCell.alignment = centerAlign
     totalCell.font = numFont
     totalCell.border = THIN_BORDER
+    totalCell.fill = TOTAL_HOURS_FILL
     if (rowFill) {
       totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } }
     }
@@ -264,6 +318,7 @@ export async function buildDailyBreakdownWorkbook(
     absenceCell.alignment = centerAlign
     absenceCell.font = numFont
     absenceCell.border = THIN_BORDER
+    absenceCell.fill = TOTAL_ABSENCE_FILL
     if (rowFill) {
       absenceCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } }
     }
@@ -273,6 +328,7 @@ export async function buildDailyBreakdownWorkbook(
     deductionCell.alignment = centerAlign
     deductionCell.font = numFont
     deductionCell.border = THIN_BORDER
+    deductionCell.fill = DEDUCTION_FILL
     if (rowFill) {
       deductionCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } }
     }
@@ -285,6 +341,7 @@ export async function buildDailyBreakdownWorkbook(
     salaryCell.alignment = centerAlign
     salaryCell.font = numFont
     salaryCell.border = THIN_BORDER
+    salaryCell.fill = RATE_FILL
     if (rowFill) {
       salaryCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: rowFill } }
     }
@@ -321,7 +378,7 @@ export async function buildDailyBreakdownWorkbook(
   ws.getRow(finalRow).height = 34
 
   const totalSarLabel = ws.getCell(finalRow, CAPTION)
-  totalSarLabel.value = "Total (SAR)"
+  totalSarLabel.value = "Total"
   totalSarLabel.font = totalsFont
   totalSarLabel.alignment = { horizontal: "right", vertical: "middle" }
   totalSarLabel.border = THIN_BORDER
