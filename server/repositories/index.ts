@@ -275,6 +275,26 @@ export const appSettingRepository = {
   },
 }
 
+export const auditLogRepository = {
+  create(data: Prisma.AuditLogUncheckedCreateInput) {
+    return prisma.auditLog.create({ data })
+  },
+  list(options?: { userId?: string; action?: string; entity?: string; from?: Date; to?: Date; take?: number }) {
+    return prisma.auditLog.findMany({
+      where: {
+        ...(options?.userId && { userId: options.userId }),
+        ...(options?.action && { action: options.action }),
+        ...(options?.entity && { entity: options.entity }),
+        ...(options?.from && { createdAt: { gte: options.from } }),
+        ...(options?.to && { createdAt: { lte: options.to } }),
+      },
+      include: { user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: "desc" },
+      take: options?.take ?? 50,
+    })
+  },
+}
+
 export const kioskConfigRepository = {
   list() {
     return prisma.kioskConfig.findMany({

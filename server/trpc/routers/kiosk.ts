@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
-import { router, publicProcedure, mapDomainError } from "@/server/trpc/trpc"
+import { router, publicProcedure, protectedProcedure, mapDomainError } from "@/server/trpc/trpc"
 import {
   punch,
   lookupEmployee,
@@ -11,6 +11,7 @@ import {
   regenerateKioskToken,
   generateKioskToken,
 } from "@/server/services/kiosk.service"
+import { logAudit } from "@/server/services/audit.service"
 import { kioskConfigRepository } from "@/server/repositories"
 import { IdentificationMethod } from "@/server/domain/attendance"
 
@@ -36,17 +37,17 @@ async function assertKioskToken(kioskToken: string) {
 }
 
 export const kioskRouter = router({
-  activeConfig: publicProcedure.query(() =>
+  activeConfig: protectedProcedure.query(() =>
     kioskConfigRepository.getActive(),
   ),
 
-  bySlug: publicProcedure
+  bySlug: protectedProcedure
     .input(z.object({ slug: z.string().min(1) }))
     .query(({ input }) =>
       kioskConfigRepository.getBySlug(input.slug),
     ),
 
-  listActive: publicProcedure.query(async () => {
+  listActive: protectedProcedure.query(async () => {
     const configs = await kioskConfigRepository.list()
     return configs
       .filter((c) => c.isActive)
@@ -59,27 +60,41 @@ export const kioskRouter = router({
       }))
   }),
 
-  validateToken: publicProcedure
+  validateToken: protectedProcedure
     .input(z.object({ token: z.string().min(1) }))
-    .mutation(async ({ input }) => {
-      return validateKioskToken(input.token)
+    .mutation(async ({ ctx, input }) => {
+      const result = await validateKioskToken(input.token)
+      await logAudit(
+        { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+        "kiosk.token.validate",
+        "kiosk",
+        undefined,
+        { valid: result.valid },
+      )
+      return result
     }),
 
-  regenerateToken: publicProcedure
+  regenerateToken: protectedProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const token = await regenerateKioskToken(input.id)
+      await logAudit(
+        { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+        "kiosk.token.regenerate",
+        "kiosk",
+        input.id,
+      )
       return { token }
     }),
 
-  lookup: publicProcedure
+  lookup: protectedProcedure
     .input(z.object({ empCode: z.string().min(1), kioskToken: z.string().min(1) }))
     .query(async ({ input }) => {
       await assertKioskToken(input.kioskToken)
       return lookupEmployee(input.empCode.trim().toUpperCase())
     }),
 
-  punch: publicProcedure
+  punch: protectedProcedure
     .input(
       z.object({
         method: methodEnum,
@@ -93,7 +108,7 @@ export const kioskRouter = router({
     .mutation(async ({ ctx, input }) => {
       await assertKioskToken(input.kioskToken)
       try {
-        return await punch({
+        const result = await punch({
           method: input.method,
           value: input.value,
           pin: input.pin,
@@ -104,12 +119,25 @@ export const kioskRouter = router({
             kioskToken: input.kioskToken,
           },
         })
+        await logAudit(
+          { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+          "kiosk.punch",
+          "attendance",
+          result.employee?.id,
+          {
+            method: input.method,
+            action: result.action,
+            employeeCode: input.value,
+            employeeName: result.employee?.fullName,
+          },
+        )
+        return result
       } catch (err) {
         mapDomainError(err)
       }
     }),
 
-  getActiveEmployees: publicProcedure
+  getActiveEmployees: protectedProcedure
     .input(kioskTokenInput)
     .query(async ({ input }) => {
       await assertKioskToken(input.kioskToken)
@@ -120,20 +148,38 @@ export const kioskRouter = router({
       }
     }),
 
-  verifyAdminPin: publicProcedure
+  verifyAdminPin: protectedProcedure
     .input(z.object({ pin: z.string().min(1), kioskToken: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       await assertKioskToken(input.kioskToken)
       const valid = await verifyAdminPin(input.pin, ctx.ipAddress)
+      await logAudit(
+        { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+        "kiosk.admin_pin.verify",
+        "kiosk",
+        undefined,
+        { valid },
+      )
       return { valid }
     }),
 
-  adminPunch: publicProcedure
+  adminPunch: protectedProcedure
     .input(z.object({ employeeId: z.string().min(1), kioskToken: z.string().min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await assertKioskToken(input.kioskToken)
       try {
-        return await adminPunch(input.employeeId, input.kioskToken)
+        const result = await adminPunch(input.employeeId, input.kioskToken)
+        await logAudit(
+          { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+          "kiosk.admin_punch",
+          "attendance",
+          result.employee?.id,
+          {
+            action: result.action,
+            employeeName: result.employee?.fullName,
+          },
+        )
+        return result
       } catch (err) {
         mapDomainError(err)
       }

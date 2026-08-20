@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -161,41 +160,18 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Employees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data?.summary.headcount ?? "-"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Working Hours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{data ? formatMinutes(data.summary.totalWorkingMinutes) : "-"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Overtime</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-amber-600">
-              {data ? formatMinutes(data.summary.totalOvertimeMinutes) : "-"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Missing Checkouts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600">{data?.summary.missingCheckouts ?? "-"}</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "Total Employees", value: data?.summary.headcount ?? "-" },
+          { label: "Working Hours", value: data ? formatMinutes(data.summary.totalWorkingMinutes) : "-" },
+          { label: "Overtime", value: data ? formatMinutes(data.summary.totalOvertimeMinutes) : "-", className: "text-amber-600" },
+          { label: "Missing Checkouts", value: data?.summary.missingCheckouts ?? "-", className: "text-red-600" },
+        ].map((item) => (
+          <div key={item.label} className="rounded-md border px-3 py-2">
+            <p className="text-xs text-muted-foreground">{item.label}</p>
+            <p className={`text-lg font-bold tabular-nums ${item.className ?? ""}`}>{item.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}

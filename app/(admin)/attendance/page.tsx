@@ -7,7 +7,6 @@ import { trpc } from "@/lib/trpc/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -199,47 +198,19 @@ function AttendancePageInner() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-5">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Employees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Present Today</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{presentCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Absent Today</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600">{totalCount - presentCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Pending Approval</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-amber-600">{pendingCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Approved</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-emerald-600">{approvedCount}</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-2 sm:grid-cols-5">
+        {[
+          { label: "Total Employees", value: totalCount },
+          { label: "Present", value: presentCount, className: "text-emerald-600" },
+          { label: "Absent", value: totalCount - presentCount, className: "text-red-600" },
+          { label: "Pending", value: pendingCount, className: "text-amber-600" },
+          { label: "Approved", value: approvedCount, className: "text-emerald-600" },
+        ].map((item) => (
+          <div key={item.label} className="rounded-md border px-3 py-2">
+            <p className="text-xs text-muted-foreground">{item.label}</p>
+            <p className={`text-lg font-bold tabular-nums ${item.className ?? ""}`}>{item.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Admin Controls — batch approve */}

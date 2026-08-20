@@ -9,6 +9,7 @@ import { settingsRouter } from "@/server/trpc/routers/settings"
 import { generalRouter } from "@/server/trpc/routers/general"
 import { userRouter } from "@/server/trpc/routers/users"
 import { projectRouter } from "@/server/trpc/routers/project"
+import { auditLogRouter } from "@/server/trpc/routers/audit"
 
 export const appRouter = router({
   kiosk: kioskRouter,
@@ -22,6 +23,7 @@ export const appRouter = router({
   settings: settingsRouter,
   general: generalRouter,
   users: userRouter,
+  auditLog: auditLogRouter,
 })
 
 export type AppRouter = typeof appRouter

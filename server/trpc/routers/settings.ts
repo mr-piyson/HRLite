@@ -2,6 +2,7 @@ import { z } from "zod"
 import { router, adminProcedure } from "@/server/trpc/trpc"
 import { kioskConfigRepository } from "@/server/repositories"
 import { regenerateKioskToken, generateKioskToken } from "@/server/services/kiosk.service"
+import { logAudit } from "@/server/services/audit.service"
 
 const configShape = {
   kioskName: z.string().min(1),
@@ -42,27 +43,55 @@ export const settingsRouter = router({
 
   create: adminProcedure
     .input(z.object(configShape))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const token = generateKioskToken()
-      return kioskConfigRepository.create({ ...input, accessToken: token })
+      const config = await kioskConfigRepository.create({ ...input, accessToken: token })
+      await logAudit(
+        { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+        "kiosk.config.create",
+        "kiosk",
+        config.id,
+        { name: input.kioskName, slug: input.slug },
+      )
+      return config
     }),
 
   regenerateToken: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const token = await regenerateKioskToken(input.id)
+      await logAudit(
+        { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+        "kiosk.config.regenerate_token",
+        "kiosk",
+        input.id,
+      )
       return { token }
     }),
 
   update: adminProcedure
     .input(z.object({ id: z.string(), data: z.object(configShape).partial() }))
-    .mutation(({ input }) =>
-      kioskConfigRepository.update(input.id, input.data),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const config = await kioskConfigRepository.update(input.id, input.data)
+      await logAudit(
+        { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+        "kiosk.config.update",
+        "kiosk",
+        input.id,
+        { changes: Object.keys(input.data) },
+      )
+      return config
+    }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(({ input }) =>
-      kioskConfigRepository.delete(input.id),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      await kioskConfigRepository.delete(input.id)
+      await logAudit(
+        { userId: ctx.session.user.id, ipAddress: ctx.ipAddress, userAgent: ctx.deviceName },
+        "kiosk.config.delete",
+        "kiosk",
+        input.id,
+      )
+    }),
 })
