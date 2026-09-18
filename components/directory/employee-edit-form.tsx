@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { trpc } from "@/lib/trpc/client"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -20,7 +21,7 @@ import type { Employee } from "@prisma/client"
 import { DocumentTypeLabel } from "@/server/domain/employee"
 
 interface EmployeeEditFormProps {
-  employee: Employee | undefined
+  employee: (Employee & { projectEmployees?: Array<{ isActive: boolean; project: { name: string } }> }) | undefined
   isLoading?: boolean
   onSaved?: () => void
   onCancelled?: () => void
@@ -36,7 +37,6 @@ export function EmployeeEditForm({
   const [fullName, setFullName] = useState(employee?.fullName ?? "")
   const [designation, setDesignation] = useState(employee?.designation ?? "")
   const [department, setDepartment] = useState(employee?.department ?? "")
-  const [projectId, setProjectId] = useState<string | null>(employee?.projectId ?? null)
   const [contactNo, setContactNo] = useState(employee?.contactNo ?? "")
   const [supplierId, setSupplierId] = useState<string | null>(employee?.supplierId ?? null)
   const [isActive, setIsActive] = useState(employee?.isActive ?? true)
@@ -46,7 +46,6 @@ export function EmployeeEditForm({
 
   const utils = trpc.useUtils()
   const { data: suppliers } = trpc.supplier.list.useQuery()
-  const { data: projects } = trpc.project.listActive.useQuery()
   const { data: settings } = trpc.general.get.useQuery()
 
   const updateMutation = trpc.employee.update.useMutation({
@@ -101,7 +100,6 @@ export function EmployeeEditForm({
         fullName,
         designation: designation || undefined,
         department: department || undefined,
-        projectId: projectId || undefined,
         contactNo: contactNo || undefined,
         nationality: nationality || undefined,
         documentType: documentType || undefined,
@@ -145,23 +143,24 @@ export function EmployeeEditForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>Project</Label>
-              <Select
-                value={projectId ?? "none"}
-                onValueChange={(v: string | null) => setProjectId(v === "none" ? null : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (Unassigned)</SelectItem>
-                  {projects?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Project Assignments</Label>
+              <div className="flex flex-wrap gap-1.5 min-h-[36px] items-center rounded-md border px-3 py-2 text-sm">
+                {employee?.projectEmployees?.length ? (
+                  employee.projectEmployees.map((pe, idx) => (
+                    <Badge
+                      key={`${pe.project.name}-${idx}`}
+                      variant={pe.isActive ? "default" : "secondary"}
+                      className="text-xs"
+                    >
+                      {pe.project.name}
+                      {pe.isActive && " (Active)"}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-muted-foreground text-xs">No projects assigned</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Manage assignments in Project Settings</p>
             </div>
             <div className="space-y-1">
               <Label htmlFor="contactNo">Contact No.</Label>

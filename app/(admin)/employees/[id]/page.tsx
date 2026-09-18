@@ -97,8 +97,14 @@ export default function EmployeeDetailPage() {
               <dd className="font-medium">{employee.department ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Project</dt>
-              <dd className="font-medium">{employee.project?.name ?? "—"}</dd>
+              <dt className="text-muted-foreground">Projects</dt>
+              <dd className="font-medium">
+                {(employee as typeof employee & { projectEmployees?: { isActive: boolean; project: { name: string } }[] })?.projectEmployees?.length
+                  ? (employee as typeof employee & { projectEmployees: { isActive: boolean; project: { name: string } } }).projectEmployees
+                      .map((pe) => `${pe.project.name}${pe.isActive ? " (Active)" : ""}`)
+                      .join(", ")
+                  : "—"}
+              </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Contact No.</dt>

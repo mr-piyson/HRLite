@@ -1,6 +1,10 @@
 import { z } from "zod"
 import { router, adminProcedure, mapDomainError } from "@/server/trpc/trpc"
-import { projectRepository, employeeRepository } from "@/server/repositories"
+import {
+  projectRepository,
+  employeeRepository,
+  projectEmployeeRepository,
+} from "@/server/repositories"
 import { DomainError } from "@/server/domain/attendance"
 
 export const projectRouter = router({
@@ -71,23 +75,25 @@ export const projectRouter = router({
         if (!employee) throw new DomainError("Employee not found", "NOT_FOUND")
         const project = await projectRepository.getById(input.projectId)
         if (!project) throw new DomainError("Project not found", "NOT_FOUND")
-        return await employeeRepository.update(input.employeeId, {
-          projectId: input.projectId,
-        })
+        return await projectEmployeeRepository.assign(
+          input.employeeId,
+          input.projectId,
+        )
       } catch (err) {
         mapDomainError(err)
       }
     }),
 
   unassignEmployee: adminProcedure
-    .input(z.object({ employeeId: z.string() }))
+    .input(z.object({ employeeId: z.string(), projectId: z.string() }))
     .mutation(async ({ input }) => {
       try {
         const employee = await employeeRepository.getById(input.employeeId)
         if (!employee) throw new DomainError("Employee not found", "NOT_FOUND")
-        return await employeeRepository.update(input.employeeId, {
-          projectId: null,
-        })
+        return await projectEmployeeRepository.unassign(
+          input.employeeId,
+          input.projectId,
+        )
       } catch (err) {
         mapDomainError(err)
       }
@@ -105,13 +111,42 @@ export const projectRouter = router({
         const project = await projectRepository.getById(input.projectId)
         if (!project) throw new DomainError("Project not found", "NOT_FOUND")
 
-        const { prisma } = await import("@/server/db/prisma")
-        await prisma.employee.updateMany({
-          where: { id: { in: input.employeeIds } },
-          data: { projectId: input.projectId },
-        })
+        await projectEmployeeRepository.bulkAssign(
+          input.employeeIds,
+          input.projectId,
+        )
 
         return { updated: input.employeeIds.length }
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
+
+  setActive: adminProcedure
+    .input(z.object({ employeeId: z.string(), projectId: z.string() }))
+    .mutation(async ({ input }) => {
+      try {
+        const employee = await employeeRepository.getById(input.employeeId)
+        if (!employee) throw new DomainError("Employee not found", "NOT_FOUND")
+        const project = await projectRepository.getById(input.projectId)
+        if (!project) throw new DomainError("Project not found", "NOT_FOUND")
+        return await projectEmployeeRepository.activate(
+          input.employeeId,
+          input.projectId,
+        )
+      } catch (err) {
+        mapDomainError(err)
+      }
+    }),
+
+  deactivateEmployee: adminProcedure
+    .input(z.object({ employeeId: z.string(), projectId: z.string() }))
+    .mutation(async ({ input }) => {
+      try {
+        return await projectEmployeeRepository.deactivate(
+          input.employeeId,
+          input.projectId,
+        )
       } catch (err) {
         mapDomainError(err)
       }

@@ -3,6 +3,7 @@ import {
   attendanceRepository,
   employeeRepository,
   kioskConfigRepository,
+  projectEmployeeRepository,
 } from "@/server/repositories"
 import {
   type AttendancePolicy,
@@ -32,6 +33,7 @@ export async function getPolicy(): Promise<AttendancePolicy> {
 export async function regenerateAttendance(
   employeeId: string,
   dateKey: string,
+  projectId?: string | null,
 ) {
   const { start, end } = dayBounds(dateKey)
   const [logs, employee, policy] = await Promise.all([
@@ -46,8 +48,11 @@ export async function regenerateAttendance(
     policy,
   )
 
+  const resolvedProjectId = projectId ?? employee?.projectEmployees?.find((pe) => pe.isActive)?.projectId ?? null
+
   return attendanceRepository.upsertDaily(employeeId, dateKey, {
     employeeId,
+    projectId: resolvedProjectId,
     supplierId: employee?.supplierId ?? null,
     date: dateKey,
     timeIn: computed.timeIn,

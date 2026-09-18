@@ -22,7 +22,7 @@ import Link from "next/link"
 import { FolderKanban, Users, Pencil, Trash2 } from "lucide-react"
 import type { Project } from "@prisma/client"
 
-type ProjectWithCount = Project & { _count: { employees: number } }
+type ProjectWithCount = Project & { _count: { projectEmployees: number } }
 
 export default function ProjectsPage() {
   const { data: projects, isLoading } = trpc.project.list.useQuery()
@@ -115,7 +115,7 @@ export default function ProjectsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Users className="size-3.5" />
-                      <span>{project._count.employees} employees</span>
+                      <span>{project._count.projectEmployees} employees</span>
                     </div>
                     <Badge variant={project.isActive ? "default" : "secondary"}>
                       {project.isActive ? "Active" : "Inactive"}
@@ -134,8 +134,8 @@ export default function ProjectsPage() {
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
-              {deleteTarget && deleteTarget._count.employees > 0
-                ? ` This project has ${deleteTarget._count.employees} assigned employee(s). Unassign them first.`
+              {deleteTarget && deleteTarget._count.projectEmployees > 0
+                ? ` This project has ${deleteTarget._count.projectEmployees} assigned employee(s). Unassign them first.`
                 : " This action cannot be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -144,7 +144,7 @@ export default function ProjectsPage() {
             <AlertDialogAction
               onClick={() => deleteTarget && deleteMutation.mutate({ id: deleteTarget.id })}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteTarget ? deleteTarget._count.employees > 0 : true}
+              disabled={deleteTarget ? deleteTarget._count.projectEmployees > 0 : true}
             >
               Delete
             </AlertDialogAction>

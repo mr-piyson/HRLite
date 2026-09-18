@@ -15,8 +15,25 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  employees    Employee[]
-  kioskConfigs KioskConfig[]
+  projectEmployees ProjectEmployee[]
+  kioskConfigs     KioskConfig[]
+}
+
+model ProjectEmployee {
+  id          String   @id @default(cuid())
+  employeeId  String
+  projectId   String
+  isActive    Boolean  @default(true)
+  activatedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, projectId])
+  @@index([projectId])
+  @@index([employeeId])
 }
 
 model Supplier {
@@ -42,7 +59,6 @@ model Employee {
   fullName       String
   designation    String?
   department     String?
-  projectId      String?
   contactNo      String?
   hourRate       Float    @default(0)
   currency       String?  @default("BHD")
@@ -57,14 +73,13 @@ model Employee {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  supplier       Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  project        Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  attendanceLogs AttendanceLog[]
-  attendance     Attendance[]
-  rateHistory    EmployeeRateHistory[]
+  supplier         Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  projectEmployees ProjectEmployee[]
+  attendanceLogs   AttendanceLog[]
+  attendance       Attendance[]
+  rateHistory      EmployeeRateHistory[]
 
   @@index([supplierId])
-  @@index([projectId])
   @@index([rfid])
 }
 
@@ -105,6 +120,7 @@ model AttendanceLog {
 model Attendance {
   id              String    @id @default(cuid())
   employeeId      String
+  projectId       String?
   supplierId      String?
   date            String
   timeIn          DateTime?
@@ -122,13 +138,14 @@ model Attendance {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  supplier  Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  approvedBy User?    @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  approvedBy User?     @relation(fields: [approvedById], references: [id], onDelete: SetNull)
 
   @@unique([employeeId, date])
   @@index([date])
   @@index([supplierId, date])
+  @@index([projectId])
   @@index([status])
   @@index([approvalStatus])
 }

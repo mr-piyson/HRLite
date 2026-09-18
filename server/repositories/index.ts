@@ -1,17 +1,107 @@
 import { prisma } from "@/server/db/prisma"
 import type { Prisma } from "@prisma/client"
 
+export const projectEmployeeRepository = {
+  listForEmployee(employeeId: string) {
+    return prisma.projectEmployee.findMany({
+      where: { employeeId },
+      include: { project: true },
+      orderBy: { activatedAt: "desc" },
+    })
+  },
+  listForProject(projectId: string) {
+    return prisma.projectEmployee.findMany({
+      where: { projectId },
+      include: {
+        employee: {
+          include: { supplier: true },
+        },
+      },
+      orderBy: { employee: { fullName: "asc" } },
+    })
+  },
+  getActiveForEmployee(employeeId: string) {
+    return prisma.projectEmployee.findFirst({
+      where: { employeeId, isActive: true },
+      include: { project: true },
+    })
+  },
+  getActiveForProject(projectId: string) {
+    return prisma.projectEmployee.findMany({
+      where: { projectId, isActive: true },
+      include: {
+        employee: {
+          include: { supplier: true },
+        },
+      },
+      orderBy: { employee: { fullName: "asc" } },
+    })
+  },
+  async activate(employeeId: string, projectId: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.projectEmployee.updateMany({
+        where: { employeeId, isActive: true },
+        data: { isActive: false },
+      })
+      const existing = await tx.projectEmployee.findUnique({
+        where: { employeeId_projectId: { employeeId, projectId } },
+      })
+      if (existing) {
+        return tx.projectEmployee.update({
+          where: { id: existing.id },
+          data: { isActive: true, activatedAt: new Date() },
+        })
+      }
+      return tx.projectEmployee.create({
+        data: { employeeId, projectId, isActive: true },
+      })
+    })
+  },
+  deactivate(employeeId: string, projectId: string) {
+    return prisma.projectEmployee.updateMany({
+      where: { employeeId, projectId },
+      data: { isActive: false },
+    })
+  },
+  assign(employeeId: string, projectId: string) {
+    return prisma.projectEmployee.upsert({
+      where: { employeeId_projectId: { employeeId, projectId } },
+      create: { employeeId, projectId, isActive: true },
+      update: { isActive: true, activatedAt: new Date() },
+    })
+  },
+  unassign(employeeId: string, projectId: string) {
+    return prisma.projectEmployee.deleteMany({
+      where: { employeeId, projectId },
+    })
+  },
+  bulkAssign(employeeIds: string[], projectId: string) {
+    return prisma.$transaction(async (tx) => {
+      for (const employeeId of employeeIds) {
+        await tx.projectEmployee.upsert({
+          where: { employeeId_projectId: { employeeId, projectId } },
+          create: { employeeId, projectId, isActive: true },
+          update: { isActive: true, activatedAt: new Date() },
+        })
+      }
+    })
+  },
+  countForProject(projectId: string) {
+    return prisma.projectEmployee.count({ where: { projectId } })
+  },
+}
+
 export const projectRepository = {
   list() {
     return prisma.project.findMany({
-      include: { _count: { select: { employees: true } } },
+      include: { _count: { select: { projectEmployees: true } } },
       orderBy: { name: "asc" },
     })
   },
   listActive() {
     return prisma.project.findMany({
       where: { isActive: true },
-      include: { _count: { select: { employees: true } } },
+      include: { _count: { select: { projectEmployees: true } } },
       orderBy: { name: "asc" },
     })
   },
@@ -19,12 +109,15 @@ export const projectRepository = {
     return prisma.project.findUnique({
       where: { id },
       include: {
-        employees: {
-          where: { isActive: true },
-          orderBy: { fullName: "asc" },
-          include: { supplier: true },
+        projectEmployees: {
+          include: {
+            employee: {
+              include: { supplier: true },
+            },
+          },
+          orderBy: { employee: { fullName: "asc" } },
         },
-        _count: { select: { employees: true } },
+        _count: { select: { projectEmployees: true } },
       },
     })
   },
@@ -35,7 +128,7 @@ export const projectRepository = {
     return prisma.project.update({ where: { id }, data })
   },
   async delete(id: string) {
-    const count = await prisma.employee.count({ where: { projectId: id } })
+    const count = await prisma.projectEmployee.count({ where: { projectId: id } })
     if (count > 0) {
       throw new Error("Cannot delete project with assigned employees")
     }
@@ -69,33 +162,56 @@ export const supplierRepository = {
 export const employeeRepository = {
   list() {
     return prisma.employee.findMany({
-      include: { supplier: true, project: true },
+      include: {
+        supplier: true,
+        projectEmployees: {
+          include: { project: true },
+        },
+      },
       orderBy: { fullName: "asc" },
     })
   },
   listActive() {
     return prisma.employee.findMany({
       where: { isActive: true },
-      include: { project: true },
+      include: {
+        projectEmployees: {
+          include: { project: true },
+        },
+      },
       orderBy: { fullName: "asc" },
     })
   },
   listByProject(projectId: string) {
     return prisma.employee.findMany({
-      where: { isActive: true, projectId },
+      where: {
+        isActive: true,
+        projectEmployees: {
+          some: { projectId, isActive: true },
+        },
+      },
+      include: {
+        projectEmployees: { include: { project: true } },
+      },
       orderBy: { fullName: "asc" },
     })
   },
   listUnassigned() {
     return prisma.employee.findMany({
-      where: { isActive: true, projectId: null },
+      where: {
+        isActive: true,
+        projectEmployees: { none: { isActive: true } },
+      },
       orderBy: { fullName: "asc" },
     })
   },
   getById(id: string) {
     return prisma.employee.findUnique({
       where: { id },
-      include: { supplier: true, project: true },
+      include: {
+        supplier: true,
+        projectEmployees: { include: { project: true } },
+      },
     })
   },
   getByCode(empCode: string) {
@@ -194,6 +310,7 @@ export const attendanceRepository = {
       where: { employeeId_date: { employeeId, date } },
       create: data,
       update: {
+        projectId: data.projectId,
         supplierId: data.supplierId,
         timeIn: data.timeIn,
         timeOut: data.timeOut,

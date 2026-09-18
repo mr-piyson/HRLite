@@ -3,10 +3,9 @@
 import { useState, useMemo } from "react"
 import { trpc } from "@/lib/trpc/client"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Search, UserPlus, UserMinus, CheckCircle2 } from "lucide-react"
+import { Search, UserPlus, UserMinus, CheckCircle2, Circle, Power } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AssignEmployeesPanelProps {
@@ -45,9 +44,23 @@ export function AssignEmployeesPanel({ projectId }: AssignEmployeesPanelProps) {
     onError: (err) => toast.error(err.message),
   })
 
+  const setActiveMutation = trpc.project.setActive.useMutation({
+    onSuccess: () => {
+      utils.project.list.invalidate()
+      utils.project.getById.invalidate({ id: projectId })
+      toast.success("Active project updated")
+    },
+    onError: (err) => toast.error(err.message),
+  })
+
+  const assignedEntries = useMemo(
+    () => project?.projectEmployees ?? [],
+    [project?.projectEmployees],
+  )
+
   const assignedIds = useMemo(
-    () => new Set(project?.employees?.map((e) => e.id) ?? []),
-    [project?.employees],
+    () => new Set(assignedEntries.map((pe) => pe.employeeId)),
+    [assignedEntries],
   )
 
   const availableEmployees = useMemo(
@@ -65,13 +78,13 @@ export function AssignEmployeesPanel({ projectId }: AssignEmployeesPanelProps) {
 
   const assignedEmployees = useMemo(
     () =>
-      project?.employees?.filter(
-        (e) =>
+      assignedEntries.filter(
+        (pe) =>
           search.trim() === "" ||
-          e.fullName.toLowerCase().includes(search.toLowerCase()) ||
-          e.empCode.toLowerCase().includes(search.toLowerCase()),
-      ) ?? [],
-    [project?.employees, search],
+          pe.employee.fullName.toLowerCase().includes(search.toLowerCase()) ||
+          pe.employee.empCode.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [assignedEntries, search],
   )
 
   const toggleSelect = (id: string) => {
@@ -96,7 +109,11 @@ export function AssignEmployeesPanel({ projectId }: AssignEmployeesPanelProps) {
   }
 
   const handleUnassign = (employeeId: string) => {
-    unassignMutation.mutate({ employeeId })
+    unassignMutation.mutate({ employeeId, projectId })
+  }
+
+  const handleSetActive = (employeeId: string) => {
+    setActiveMutation.mutate({ employeeId, projectId })
   }
 
   if (projectLoading || employeesLoading) {
@@ -135,13 +152,13 @@ export function AssignEmployeesPanel({ projectId }: AssignEmployeesPanelProps) {
           </p>
         ) : (
           <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
-            {assignedEmployees.map((emp) => (
+            {assignedEmployees.map((pe) => (
               <div
-                key={emp.id}
+                key={pe.employeeId}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30"
               >
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                  {emp.fullName
+                  {pe.employee.fullName
                     .split(" ")
                     .map((n) => n[0])
                     .join("")
@@ -149,20 +166,48 @@ export function AssignEmployeesPanel({ projectId }: AssignEmployeesPanelProps) {
                     .toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{emp.fullName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate">{pe.employee.fullName}</p>
+                    <Badge
+                      variant={pe.isActive ? "default" : "secondary"}
+                      className="text-xs shrink-0"
+                    >
+                      {pe.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    {emp.empCode} &middot; {emp.designation ?? "—"}
+                    {pe.employee.empCode} &middot; {pe.employee.designation ?? "—"}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleUnassign(emp.id)}
-                  disabled={unassignMutation.isPending}
-                  className="text-destructive hover:text-destructive shrink-0"
-                >
-                  <UserMinus className="size-4" />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {!pe.isActive && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSetActive(pe.employeeId)}
+                      disabled={setActiveMutation.isPending}
+                      className="text-green-600 hover:text-green-600"
+                      title="Set as active project"
+                    >
+                      <Power className="size-4" />
+                    </Button>
+                  )}
+                  {pe.isActive && (
+                    <div className="flex items-center gap-1 px-2">
+                      <CheckCircle2 className="size-4 text-green-600" />
+                      <span className="text-xs text-green-600 font-medium">Active</span>
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleUnassign(pe.employeeId)}
+                    disabled={unassignMutation.isPending}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <UserMinus className="size-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -200,43 +245,55 @@ export function AssignEmployeesPanel({ projectId }: AssignEmployeesPanelProps) {
           </p>
         ) : (
           <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
-            {availableEmployees.map((emp) => (
-              <div
-                key={emp.id}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors",
-                  selectedIds.has(emp.id) && "bg-muted/50",
-                )}
-                onClick={() => toggleSelect(emp.id)}
-              >
+            {availableEmployees.map((emp) => {
+              const otherProjects = emp.projectEmployees?.filter((pe) => pe.isActive) ?? []
+              return (
                 <div
+                  key={emp.id}
                   className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors",
-                    selectedIds.has(emp.id)
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-muted-foreground/30",
+                    "flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors",
+                    selectedIds.has(emp.id) && "bg-muted/50",
                   )}
+                  onClick={() => toggleSelect(emp.id)}
                 >
-                  {selectedIds.has(emp.id) && (
-                    <CheckCircle2 className="size-3.5" />
-                  )}
+                  <div
+                    className={cn(
+                      "flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+                      selectedIds.has(emp.id)
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "border-muted-foreground/30",
+                    )}
+                  >
+                    {selectedIds.has(emp.id) && (
+                      <CheckCircle2 className="size-3.5" />
+                    )}
+                  </div>
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                    {emp.fullName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{emp.fullName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {emp.empCode} &middot; {emp.designation ?? "—"}
+                    </p>
+                    {otherProjects.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {otherProjects.map((pe) => (
+                          <Badge key={pe.projectId} variant="outline" className="text-[10px]">
+                            {pe.project.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                  {emp.fullName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{emp.fullName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {emp.empCode} &middot; {emp.designation ?? "—"}
-                  </p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

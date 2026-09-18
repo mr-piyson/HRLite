@@ -5,6 +5,7 @@ import {
   appSettingRepository,
   employeeRepository,
   kioskConfigRepository,
+  projectEmployeeRepository,
 } from "@/server/repositories"
 import {
   DomainError,
@@ -218,8 +219,8 @@ async function assertProjectMembership(employeeId: string, kioskToken: string) {
   const config = await kioskConfigRepository.getByToken(kioskToken)
   if (!config?.projectId) return
 
-  const employee = await employeeRepository.getById(employeeId)
-  if (employee?.projectId !== config.projectId) {
+  const activeAssignment = await projectEmployeeRepository.getActiveForEmployee(employeeId)
+  if (!activeAssignment || activeAssignment.projectId !== config.projectId) {
     throw new DomainError(
       "Employee not assigned to this project",
       "FORBIDDEN",
@@ -242,6 +243,9 @@ async function createPunch(
   const logType = open ? LogType.OUT : LogType.IN
 
   const since = new Date(now.getTime() - DUPLICATE_WINDOW_SECONDS * 1000)
+
+  const activeAssignment = await projectEmployeeRepository.getActiveForEmployee(employee.id)
+  const projectId = activeAssignment?.projectId ?? null
 
   await prisma.$transaction(async () => {
     const lastLog = await attendanceLogRepository.findLastSince(
@@ -266,7 +270,7 @@ async function createPunch(
     })
   })
 
-  const attendance = await regenerateAttendance(employee.id, dateKey)
+  const attendance = await regenerateAttendance(employee.id, dateKey, projectId)
 
   return {
     employee: {

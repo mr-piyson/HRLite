@@ -3,6 +3,7 @@ import {
   attendanceLogRepository,
   employeeRepository,
   kioskConfigRepository,
+  projectEmployeeRepository,
 } from "@/server/repositories"
 import {
   AttendanceStatus,
@@ -163,6 +164,7 @@ export async function adminManualCreateAttendance(
 
   const created = await attendanceRepository.create({
     employeeId,
+    projectId: (await projectEmployeeRepository.getActiveForEmployee(employeeId))?.projectId ?? null,
     supplierId: employee.supplierId,
     date: dateKey,
     timeIn,

@@ -17,7 +17,6 @@ export function EmployeeFormDialog() {
   const [fullName, setFullName] = useState("");
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
-  const [projectId, setProjectId] = useState<string | null>(null);
   const [contactNo, setContactNo] = useState("");
   const [hourRate, setHourRate] = useState("0");
   const [supplierId, setSupplierId] = useState<string | null>(null);
@@ -28,7 +27,6 @@ export function EmployeeFormDialog() {
 
   const utils = trpc.useUtils();
   const { data: suppliers } = trpc.supplier.list.useQuery();
-  const { data: projects } = trpc.project.listActive.useQuery();
   const { data: settings } = trpc.general.get.useQuery();
   const directLabel = settings?.companyName ?? "Direct Employee";
 
@@ -55,7 +53,6 @@ export function EmployeeFormDialog() {
     setFullName("");
     setDesignation("");
     setDepartment("");
-    setProjectId(null);
     setContactNo("");
     setHourRate("0");
     setSupplierId(null);
@@ -72,7 +69,6 @@ export function EmployeeFormDialog() {
       fullName,
       designation: designation || undefined,
       department: department || undefined,
-      projectId: projectId || undefined,
       contactNo: contactNo || undefined,
       hourRate: parseFloat(hourRate) || 0,
       currency,
@@ -128,35 +124,16 @@ export function EmployeeFormDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>Project</Label>
-              <Select
-                value={projectId ?? "none"}
-                onValueChange={(v: string | null) => setProjectId(v === "none" ? null : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None (Unassigned)</SelectItem>
-                  {projects?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
               <Label htmlFor="contactNo">Contact No.</Label>
               <Input id="contactNo" value={contactNo} onChange={(e) => setContactNo(e.target.value)} />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="nationality">Nationality</Label>
               <Input id="nationality" value={nationality} onChange={(e) => setNationality(e.target.value)} />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Currency</Label>
               <Select value={currency} onValueChange={(v) => v && setCurrency(v)}>
